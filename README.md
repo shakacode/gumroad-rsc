@@ -21,6 +21,7 @@ This repository tracks [antiwork/gumroad](https://github.com/antiwork/gumroad) a
 The goal is not to argue that every Inertia page should be replaced. The goal is to determine whether a narrower set of pages can benefit enough from React 19, React on Rails Pro, and React Server Components to justify a deeper proposal later.
 
 See [docs/rsc-comparison-plan.md](docs/rsc-comparison-plan.md) for the working plan, scope, and success criteria.
+See [docs/positioning-notes.md](docs/positioning-notes.md) for the product, messaging, and adjacent-idea notes this experiment should help answer.
 
 ## Table of Contents
 
