@@ -112,13 +112,40 @@ Before changing implementation, capture:
 
 ## Environment status for baseline work
 
-As of now:
+Current verified state:
 
-- Docker is installed
-- gems are not installed yet
-- `node_modules` are not installed yet
+- Docker-backed local services boot
+- Rails boots locally on `:3000`
+- the Shakapacker dev server boots locally on `:3035`
+- nginx boots locally once `helperai.dev` cert files exist
+- the current dashboard spec surface is green locally after test merchant-account seeds are loaded
 
-So the next engineering step is setup, not implementation.
+That means the next engineering step is no longer setup. The next engineering step is baseline capture plus the first upgrade branch.
+
+## Hidden prerequisites discovered during setup
+
+- The dashboard spec surface depends on seeded `MerchantAccount` records in `RAILS_ENV=test`.
+- `db:prepare` alone did not create those rows in test on this machine.
+- Loading these seed files fixed the issue:
+  - `db/seeds/010_stripe_merchant_account_seeds.rb`
+  - `db/seeds/020_braintree_merchant_account_seeds.rb`
+  - `db/seeds/030_paypal_merchant_account_seeds.rb`
+- The local nginx proxy also expects `helperai.dev` certificates, not just the checked-in `gumroad.dev` certificates.
+- The repository already provides `bin/generate_ssl_certificates` for this, but CA installation may still require a manual sudo step on macOS if browser trust matters.
+
+## First implementation slice
+
+The first real code branch should be:
+
+- upgrade React to 19
+- upgrade Shakapacker to `10.0.0`
+- switch the current Inertia app from Webpack to Rspack
+
+This should happen before adding the separate React on Rails Pro surface, because it answers an important positioning question directly:
+
+- can Shakapacker plus Rspack improve this app today without asking Gumroad to leave Inertia?
+
+If that branch stays low-risk, it becomes a much easier review story than opening with a React on Rails migration pitch.
 
 ## Success condition for this target
 
