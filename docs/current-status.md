@@ -13,10 +13,11 @@ This repository is currently in the planning and framing stage, not the implemen
 - Preserved `upstream` so the experiment stays grounded in the real app
 - Documented the comparison plan in [rsc-comparison-plan.md](./rsc-comparison-plan.md)
 - Documented positioning, adjacent ideas, and IP guardrails in [positioning-notes.md](./positioning-notes.md)
+- Selected `Dashboard` as the first comparison surface
+- Documented the first implementation-facing brief in [dashboard-experiment-brief.md](./dashboard-experiment-brief.md)
 
 ## What is not done yet
 
-- no comparison surface has been selected
 - no baseline metrics have been captured
 - no React on Rails Pro integration has been added
 - no React 19 upgrade work has been done
@@ -35,29 +36,30 @@ The demo should not be considered ready until it can show all of the following:
 - measurements or at least disciplined observations for bundle size, loading behavior, and developer tradeoffs
 - a short written conclusion that says where Inertia wins and where React on Rails Pro wins
 
+## Environment readiness
+
+Current local state:
+
+- Docker is available
+- `node_modules` is not installed
+- `bundle check` currently fails because gems are not installed
+
+That means the repository is ready for setup work, but not yet ready for baseline capture on this machine.
+
 ## Recommended next step
 
-The next real step is to establish a baseline branch and choose the first comparison surface.
+The next real step is to establish the baseline for the selected `Dashboard` surface.
 
 Recommended order:
 
-1. Pick the first page to compare.
-2. Run the current upstream app locally.
-3. Capture baseline notes, screenshots, and measurements.
-4. Decide the smallest implementation slice that can demonstrate React on Rails Pro value.
-5. Only then start code changes for React 19, Pro, RSC, or bundler work.
-
-## Recommended first target
-
-The current recommendation is:
-
-- `Dashboard` if the goal is to prove React 19 and RSC value
-- `Products/Edit` if the goal is to prove advanced React UI ergonomics
+1. Install dependencies and get the app running locally.
+2. Capture baseline notes, screenshots, and measurements for `Dashboard`.
+3. Decide the smallest implementation slice that can demonstrate React on Rails Pro value on `Dashboard`.
+4. Only then start code changes for React 19, Pro, RSC, or bundler work.
 
 ## Suggested branch sequence
 
 - `jg-codex/baseline-metrics`
-- `jg-codex/target-selection`
 - `jg-codex/shakapacker-upgrade`
 - `jg-codex/rspack-migration`
 - `jg-codex/react-on-rails-pro-poc`
