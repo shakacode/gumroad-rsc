@@ -14,6 +14,14 @@
   <a href="https://gumroad.com">Gumroad</a> is an e-commerce platform that enables creators to sell products directly to consumers. This repository contains the source code for the Gumroad web application.
 </p>
 
+## Experiment Repo
+
+This repository tracks [antiwork/gumroad](https://github.com/antiwork/gumroad) and is being used by ShakaCode as a focused experiment for comparing the current Inertia-based implementation against a React on Rails Pro + React 19 + RSC implementation on carefully chosen surfaces.
+
+The goal is not to argue that every Inertia page should be replaced. The goal is to determine whether a narrower set of pages can benefit enough from React 19, React on Rails Pro, and React Server Components to justify a deeper proposal later.
+
+See [docs/rsc-comparison-plan.md](docs/rsc-comparison-plan.md) for the working plan, scope, and success criteria.
+
 ## Table of Contents
 
 - [Getting Started](#getting-started)
