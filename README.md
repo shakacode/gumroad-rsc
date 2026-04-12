@@ -22,6 +22,7 @@ The goal is not to argue that every Inertia page should be replaced. The goal is
 
 See [docs/rsc-comparison-plan.md](docs/rsc-comparison-plan.md) for the working plan, scope, and success criteria.
 See [docs/positioning-notes.md](docs/positioning-notes.md) for the product, messaging, and adjacent-idea notes this experiment should help answer.
+See [docs/current-status.md](docs/current-status.md) for the current state of the demo, readiness, and next-step checklist.
 
 ## Table of Contents
 
