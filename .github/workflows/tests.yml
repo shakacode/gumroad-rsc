@@ -6,34 +6,105 @@ on:
       - "**"
     tags-ignore:
       - "production-*"
-  pull_request_target:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request_target' || github.ref != 'refs/heads/main' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   ci_gate:
-    name: CI Gate${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && ' (internal PR noop)' || '' }}
-    runs-on: ubicloud-standard-2
-    environment: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository && 'ci-protected' || '' }}
+    name: CI Gate
+    runs-on: ubuntu-latest
     steps:
       - run: true
 
+  demo_validation:
+    name: Demo Validation
+    runs-on: ubuntu-latest
+    needs: ci_gate
+    if: ${{ github.repository == 'shakacode/gumroad-rsc' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-libmysqlclient-dev pkg-config
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".node-version"
+          cache: "npm"
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Export JS routes
+        run: npm run setup
+
+      - name: Validate Rspack build
+        run: RAILS_ENV=development NODE_ENV=development bin/shakapacker --mode development
+
+      - name: Start local services
+        run: docker compose -f docker/docker-compose-local.yml up -d db redis mongo elasticsearch minio createbuckets copyfixturefiles
+
+      - name: Wait for local services
+        run: |
+          for port in 3306 6379 27017 9200 9000; do
+            until ruby -rsocket -e "TCPSocket.new('127.0.0.1', ${port}).close"; do
+              sleep 2
+            done
+          done
+
+          FIXTURE_CID=$(docker compose -f docker/docker-compose-local.yml ps -q copyfixturefiles)
+          until [ "$(docker inspect -f '{{.State.Status}}' "$FIXTURE_CID")" = "exited" ]; do
+            sleep 2
+          done
+          test "$(docker inspect -f '{{.State.ExitCode}}' "$FIXTURE_CID")" = "0"
+
+      - name: Prepare test database and seeds
+        env:
+          RAILS_ENV: test
+        run: |
+          bundle exec rails db:prepare
+          bundle exec rails runner 'load Rails.root.join("db/seeds/010_stripe_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/020_braintree_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/030_paypal_merchant_account_seeds.rb")'
+
+      - name: Run demo controller specs
+        env:
+          RAILS_ENV: test
+        run: bundle exec rspec spec/controllers/dashboard_controller_spec.rb spec/controllers/dashboard_rsc_demo_controller_spec.rb
+
+      - name: Validate standalone RSC build
+        env:
+          RAILS_ENV: test
+        run: npm run build:rsc-demo
+
+      - name: Clean up
+        if: always()
+        run: docker compose -f docker/docker-compose-local.yml down -v
+
   build:
-    name: Build images${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && ' (internal PR noop)' || '' }}
+    name: Build images
     runs-on: ubicloud-standard-4
     needs: ci_gate
-    if: ${{ github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name != github.repository }}
+    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
     env:
       DOCKER_BUILDKIT: 1
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Login to Quay
         uses: nick-fields/retry@v3
@@ -86,7 +157,7 @@ jobs:
           WEB_BASE_REPO: quay.io/gumroad/web_base
           WEB_BASE_TEST_REPO: quay.io/gumroad/web_base_test
           WEB_REPO: quay.io/gumroad/web
-          REVISION: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+          REVISION: ${{ github.sha }}
         run: |
           set -e
           GREEN='\033[0;32m'
@@ -131,11 +202,12 @@ jobs:
           build_and_push $WEB_REPO test-$REVISION build_test
 
   test_fast:
-    name: Test Fast ${{ matrix.ci_node_index }}${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && ' (internal PR noop)' || '' }}
+    name: Test Fast ${{ matrix.ci_node_index }}
     env:
       COMPOSE_PROJECT_NAME: web_${{ github.run_id }}_${{ github.run_attempt }}_fast_${{ matrix.ci_node_index }}
     runs-on: ubicloud-standard-4
     needs: build
+    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
     strategy:
       fail-fast: false
       matrix:
@@ -144,7 +216,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Login to Quay
         uses: nick-fields/retry@v3
@@ -163,7 +235,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 5
           command: |
-            docker pull --quiet $WEB_REPO:test-${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }} &
+            docker pull --quiet $WEB_REPO:test-${{ github.sha }} &
             PULL_PID=$!
             docker compose -f docker/docker-compose-test-and-ci.yml up -d
             COMPOSE_EXIT=$?
@@ -180,7 +252,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 5
           command: |
-            IMG=$WEB_REPO:test-${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+            IMG=$WEB_REPO:test-${{ github.sha }}
             NET=${{ env.COMPOSE_PROJECT_NAME }}_default
             docker run --rm --entrypoint="" --network $NET $IMG docker/ci/wait_on_connection.sh db_test 3306 &
             docker run --rm --entrypoint="" --network $NET $IMG docker/ci/wait_on_connection.sh elasticsearch 9200 &
@@ -197,7 +269,7 @@ jobs:
           command: |
             docker run --rm --entrypoint="" --network ${{ env.COMPOSE_PROJECT_NAME }}_default \
               -e RAILS_ENV=test \
-              $WEB_REPO:test-${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }} \
+              $WEB_REPO:test-${{ github.sha }} \
               bundle exec rake db:prepare
         env:
           WEB_REPO: quay.io/gumroad/web
@@ -205,7 +277,7 @@ jobs:
       - name: Run tests
         env:
           WEB_REPO: quay.io/gumroad/web
-          KNAPSACK_PRO_BRANCH: ${{ github.event_name == 'pull_request_target' && github.head_ref || github.ref_name }}
+          KNAPSACK_PRO_BRANCH: ${{ github.ref_name }}
         run: |
           docker run --rm --entrypoint="" --network ${{ env.COMPOSE_PROJECT_NAME }}_default \
             -e RUBY_YJIT_ENABLE=1 \
@@ -216,7 +288,7 @@ jobs:
             -e KNAPSACK_PRO_RSPEC_SPLIT_BY_TEST_EXAMPLES=true \
             -e KNAPSACK_PRO_TEST_FILE_PATTERN="spec/**/*_spec.rb" \
             -e KNAPSACK_PRO_TEST_FILE_EXCLUDE_PATTERN="spec/requests/**/*_spec.rb" \
-            -e KNAPSACK_PRO_COMMIT_HASH=${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }} \
+            -e KNAPSACK_PRO_COMMIT_HASH=${{ github.sha }} \
             -e KNAPSACK_PRO_BRANCH="$KNAPSACK_PRO_BRANCH" \
             -e KNAPSACK_PRO_CI_NODE_BUILD_ID=${{ github.run_id }} \
             -e KNAPSACK_PRO_CI_NODE_RETRY_COUNT=${{ github.run_attempt }} \
@@ -224,7 +296,7 @@ jobs:
             -e KNAPSACK_PRO_FIXED_QUEUE_SPLIT=true \
             -e CI=true \
             -e IN_DOCKER=true \
-            $WEB_REPO:test-${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }} \
+            $WEB_REPO:test-${{ github.sha }} \
             /usr/local/bin/gosu app bundle exec rake "knapsack_pro:queue:rspec[--format RSpec::Github::Formatter --tag ~skip --format progress]"
         timeout-minutes: 15
       - name: Clean up
@@ -236,12 +308,13 @@ jobs:
           docker network rm ${{ env.COMPOSE_PROJECT_NAME }}_default 2>/dev/null || true
 
   test_slow:
-    name: Test Slow ${{ matrix.ci_node_index }}${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && ' (internal PR noop)' || '' }}
+    name: Test Slow ${{ matrix.ci_node_index }}
     env:
       COMPOSE_PROJECT_NAME: web_${{ github.run_id }}_${{ github.run_attempt }}_slow_${{ matrix.ci_node_index }}
       WEB_REPO: quay.io/gumroad/web
     runs-on: ubicloud-standard-4
     needs: build
+    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
     strategy:
       fail-fast: false
       matrix:
@@ -317,7 +390,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Login to Quay
         uses: nick-fields/retry@v3
@@ -336,7 +409,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 5
           command: |
-            docker pull --quiet $WEB_REPO:test-${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }} &
+            docker pull --quiet $WEB_REPO:test-${{ github.sha }} &
             PULL_PID=$!
             docker compose -f docker/docker-compose-test-and-ci.yml up -d
             COMPOSE_EXIT=$?
@@ -353,7 +426,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 5
           command: |
-            IMG=$WEB_REPO:test-${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+            IMG=$WEB_REPO:test-${{ github.sha }}
             NET=${{ env.COMPOSE_PROJECT_NAME }}_default
             docker run --rm --entrypoint="" --network $NET $IMG docker/ci/wait_on_connection.sh db_test 3306 &
             docker run --rm --entrypoint="" --network $NET $IMG docker/ci/wait_on_connection.sh elasticsearch 9200 &
@@ -370,7 +443,7 @@ jobs:
           command: |
             docker run --rm --entrypoint="" --network ${{ env.COMPOSE_PROJECT_NAME }}_default \
               -e RAILS_ENV=test \
-              $WEB_REPO:test-${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }} \
+              $WEB_REPO:test-${{ github.sha }} \
               bundle exec rake db:prepare
         env:
           WEB_REPO: quay.io/gumroad/web
@@ -384,8 +457,8 @@ jobs:
           KNAPSACK_PRO_LOG_LEVEL: info
           KNAPSACK_PRO_RSPEC_SPLIT_BY_TEST_EXAMPLES: true
           KNAPSACK_PRO_TEST_FILE_PATTERN: "spec/requests/**/*_spec.rb"
-          KNAPSACK_PRO_COMMIT_HASH: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
-          KNAPSACK_PRO_BRANCH: ${{ github.event_name == 'pull_request_target' && github.head_ref || github.ref_name }}
+          KNAPSACK_PRO_COMMIT_HASH: ${{ github.sha }}
+          KNAPSACK_PRO_BRANCH: ${{ github.ref_name }}
           KNAPSACK_PRO_CI_NODE_BUILD_ID: ${{ github.run_id }}
           KNAPSACK_PRO_CI_NODE_RETRY_COUNT: ${{ github.run_attempt }}
           KNAPSACK_PRO_PROJECT_DIR: /app
@@ -419,7 +492,7 @@ jobs:
             -e KNAPSACK_PRO_FIXED_QUEUE_SPLIT \
             -e CI \
             -e IN_DOCKER \
-            $WEB_REPO:test-${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }} \
+            $WEB_REPO:test-${{ github.sha }} \
             /usr/local/bin/gosu app bundle exec rake "knapsack_pro:queue:rspec[--format RSpec::Github::Formatter --tag ~skip --format progress]"
         timeout-minutes: 20
       - name: Archive capybara artifacts
@@ -450,7 +523,7 @@ jobs:
     name: Unblock deployment from Buildkite
     runs-on: ubicloud-standard-2
     needs: [test_fast, test_slow]
-    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ github.repository != 'shakacode/gumroad-rsc' && success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - name: Unblock corresponding Buildkite build
         uses: nick-fields/retry@v3
@@ -512,6 +585,6 @@ jobs:
         env:
           UNBLOCK_DEPLOYMENT: ${{ secrets.UNBLOCK_DEPLOYMENT_FROM_BUILDKITE }}
           BUILDKITE_API_TOKEN: ${{ secrets.BUILDKITE_API_TOKEN }}
-          COMMIT_SHA: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+          COMMIT_SHA: ${{ github.sha }}
           ORG_SLUG: gumroad-inc
           PIPELINE_SLUG: ${{ secrets.BUILDKITE_PIPELINE_SLUG }}
