@@ -116,7 +116,7 @@ const serverConfig = {
   devtool: "eval",
   context: packsPath,
   entry: {
-    "server-bundle": "./server-bundle.tsx",
+    "server-bundle": "./dashboard_rsc_demo_server_entry.tsx",
   },
   resolve: baseResolve,
   target: "node",
@@ -145,7 +145,7 @@ const rscConfig = {
   devtool: "eval",
   context: packsPath,
   entry: {
-    "rsc-bundle": "./rsc-bundle.tsx",
+    "rsc-bundle": "./dashboard_rsc_demo_server_entry.tsx",
   },
   resolve: {
     ...baseResolve,

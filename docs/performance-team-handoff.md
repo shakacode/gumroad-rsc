@@ -29,6 +29,7 @@ What is already true:
 - the RSC route wins on total navigation duration
 - the RSC route wins on `LCP`
 - the RSC route reduces page-specific JS requests from `5` to `1`
+- the demo JS and CSS are route-scoped, so unrelated pages are not paying for the experiment
 - the raw RSC HTML transfer is now close to the Inertia control after the response-end pass
 
 What is still true:

@@ -23,6 +23,7 @@ The goal is not to argue that every Inertia page should be replaced. The goal is
 ### What this repo currently proves
 
 - `Shakapacker 10 + Rspack` is viable on this codebase and materially faster for local builds.
+- The demo assets are route-scoped, so ordinary Inertia pages do not pay for the experiment's extra JS or CSS.
 - A bounded `React on Rails Pro + RSC` dashboard slice can beat a matched `Inertia` control on `LCP` and total navigation duration.
 - The current tradeoff is still real: the matched `RSC` route is modestly slower on server `responseEnd`.
 

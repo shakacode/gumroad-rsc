@@ -18,6 +18,7 @@ class DashboardRscDemoController < Sellers::BaseController
     LargeSeller.create_if_warranted(current_seller)
 
     @hide_layouts = true
+    @css_pack_name = "dashboard_rsc_demo_styles" unless Rails.env.test?
     @dashboard_rsc_demo_props = dashboard_comparison_props
 
     stream_view_containing_react_components(

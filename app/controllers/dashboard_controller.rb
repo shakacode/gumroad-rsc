@@ -28,6 +28,7 @@ class DashboardController < Sellers::BaseController
       redirect_to products_url
     else
       LargeSeller.create_if_warranted(current_seller)
+      @css_pack_name = "dashboard_rsc_demo_styles" unless Rails.env.test?
       render inertia: "Dashboard/InertiaDemo", props: dashboard_comparison_props
     end
   end

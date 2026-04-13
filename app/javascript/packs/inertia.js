@@ -4,11 +4,6 @@ import { createRoot } from "react-dom/client";
 
 import AppWrapper from "../inertia/app_wrapper.tsx";
 import Layout, { PublicLayout, LoggedInUserLayout } from "../inertia/layout.tsx";
-import DashboardInertiaDemo from "../pages/Dashboard/InertiaDemo.tsx";
-
-const eagerPageComponents = {
-  "Dashboard/InertiaDemo": DashboardInertiaDemo,
-};
 
 router.on("start", (event) => {
   if (event.detail.visit.prefetch) return;
@@ -81,10 +76,6 @@ function assignLayout(page) {
 }
 
 async function resolvePageComponent(name) {
-  if (eagerPageComponents[name]) {
-    return assignLayout(eagerPageComponents[name]);
-  }
-
   try {
     const module = await import(`../pages/${name}.tsx`);
     return assignLayout(module.default);

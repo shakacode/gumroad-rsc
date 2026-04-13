@@ -45,6 +45,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - Built a bounded React on Rails Pro plus RSC dashboard surface that reuses real seller data
 - Built a matched Inertia control surface that shares the same reduced UI intent
 - Isolated the RSC route from the main Inertia `base` pack so the comparison surface is actually separate
+- Kept the demo-only JS and CSS route-scoped so non-demo pages do not download the comparison assets
 - Wired React on Rails nonce handling into Gumroad's `SecureHeaders` setup so streamed inline RSC payload scripts are allowed under CSP
 - Regenerated `js-routes` so the comparison routes are available to both the Inertia and RSC demo code
 - Added explicit development host allowlisting for the local Gumroad domains so the benchmark/login flow works again on `gumroad.dev:3000`
