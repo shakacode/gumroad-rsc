@@ -132,10 +132,15 @@ Start here:
 
 ## CI validation status
 
-The new demo surface is already covered in CI in two important ways:
+This repo now has a GitHub-hosted demo validation path aimed specifically at the public experiment workflow.
 
-- the asset build path runs `npm run build:rsc-demo` during image compilation in [`docker/web/compile_assets.sh`](../docker/web/compile_assets.sh)
-- the standard test matrix covers the demo controller specs, so the new routes are not relying only on local verification
+That validation covers:
+
+- the `Rspack`-backed Shakapacker development build
+- the standalone `npm run build:rsc-demo` bundle path
+- the targeted dashboard demo controller specs
+
+The heavier internal Gumroad matrix still exists for the original codebase shape, but this public repo now has a reviewable CI path that does not depend on the private `ubicloud` runner pool.
 
 ## Key artifacts
 

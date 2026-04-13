@@ -18,16 +18,89 @@ concurrency:
 jobs:
   ci_gate:
     name: CI Gate${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && ' (internal PR noop)' || '' }}
-    runs-on: ubicloud-standard-2
+    runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository && 'ci-protected' || '' }}
     steps:
       - run: true
+
+  demo_validation:
+    name: Demo Validation
+    runs-on: ubuntu-latest
+    needs: ci_gate
+    if: ${{ github.repository == 'shakacode/gumroad-rsc' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-libmysqlclient-dev pkg-config
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".node-version"
+          cache: "npm"
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Export JS routes
+        run: npm run setup
+
+      - name: Validate Rspack build
+        run: RAILS_ENV=development NODE_ENV=development bin/shakapacker --mode development
+
+      - name: Start local services
+        run: docker compose -f docker/docker-compose-local.yml up -d db redis mongo elasticsearch minio createbuckets copyfixturefiles
+
+      - name: Wait for local services
+        run: |
+          for port in 3306 6379 27017 9200 9000; do
+            until ruby -rsocket -e "TCPSocket.new('127.0.0.1', ${port}).close"; do
+              sleep 2
+            done
+          done
+
+          FIXTURE_CID=$(docker compose -f docker/docker-compose-local.yml ps -q copyfixturefiles)
+          until [ "$(docker inspect -f '{{.State.Status}}' "$FIXTURE_CID")" = "exited" ]; do
+            sleep 2
+          done
+          test "$(docker inspect -f '{{.State.ExitCode}}' "$FIXTURE_CID")" = "0"
+
+      - name: Prepare test database and seeds
+        env:
+          RAILS_ENV: test
+        run: |
+          bundle exec rails db:prepare
+          bundle exec rails runner 'load Rails.root.join("db/seeds/010_stripe_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/020_braintree_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/030_paypal_merchant_account_seeds.rb")'
+
+      - name: Run demo controller specs
+        env:
+          RAILS_ENV: test
+        run: bundle exec rspec spec/controllers/dashboard_controller_spec.rb spec/controllers/dashboard_rsc_demo_controller_spec.rb
+
+      - name: Validate standalone RSC build
+        env:
+          RAILS_ENV: test
+        run: npm run build:rsc-demo
+
+      - name: Clean up
+        if: always()
+        run: docker compose -f docker/docker-compose-local.yml down -v
 
   build:
     name: Build images${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && ' (internal PR noop)' || '' }}
     runs-on: ubicloud-standard-4
     needs: ci_gate
-    if: ${{ github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name != github.repository }}
+    if: ${{ github.repository != 'shakacode/gumroad-rsc' && (github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name != github.repository) }}
     env:
       DOCKER_BUILDKIT: 1
     steps:
@@ -136,6 +209,7 @@ jobs:
       COMPOSE_PROJECT_NAME: web_${{ github.run_id }}_${{ github.run_attempt }}_fast_${{ matrix.ci_node_index }}
     runs-on: ubicloud-standard-4
     needs: build
+    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
     strategy:
       fail-fast: false
       matrix:
@@ -242,6 +316,7 @@ jobs:
       WEB_REPO: quay.io/gumroad/web
     runs-on: ubicloud-standard-4
     needs: build
+    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
     strategy:
       fail-fast: false
       matrix:
@@ -450,7 +525,7 @@ jobs:
     name: Unblock deployment from Buildkite
     runs-on: ubicloud-standard-2
     needs: [test_fast, test_slow]
-    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ github.repository != 'shakacode/gumroad-rsc' && success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - name: Unblock corresponding Buildkite build
         uses: nick-fields/retry@v3

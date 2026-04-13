@@ -7,7 +7,8 @@ permissions:
 
 jobs:
   autofix:
-    runs-on: ubicloud-standard-2
+    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
+    runs-on: ubuntu-latest
     env:
       RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
     steps:

@@ -49,6 +49,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - Regenerated `js-routes` so the comparison routes are available to both the Inertia and RSC demo code
 - Added explicit development host allowlisting for the local Gumroad domains so the benchmark/login flow works again on `gumroad.dev:3000`
 - Captured successful browser measurements for the matched Inertia and RSC demo routes
+- Manually verified both demo routes in a signed-in browser session and captured comparison screenshots in `docs/images/`
 - Reduced the raw RSC comparison response from about `36.9KB` to about `15.1KB` by trimming server markup, compacting demo props, and rebuilding the dedicated RSC bundles
 - Re-ran `spec/presenters/product_presenter/product_props_spec.rb` after seeding merchant accounts in test: `26 examples, 0 failures`
 - Re-ran `spec/presenters/creator_home_presenter_spec.rb`: `22 examples, 0 failures`
@@ -182,7 +183,7 @@ Recommended order:
 2. Decide whether React 19 type cleanup belongs in the same branch or in a follow-up stacked branch.
 3. Treat `/dashboard/inertia_demo` as the primary Inertia control, not the full dashboard.
 4. Keep `/dashboard/rsc_demo`, but treat the remaining `responseEnd` gap as renderer or streaming overhead, not just raw HTML weight.
-5. Keep CI honest by preserving the existing demo validation path: the asset build already runs `npm run build:rsc-demo`, and the standard spec matrix covers the demo controllers.
+5. Keep CI honest with the GitHub-hosted demo validation workflow for this public repo: it validates the Rspack build, the targeted demo controller specs, and the standalone `npm run build:rsc-demo` path.
 6. Re-run the matched comparison after fixing the local Chrome and chromedriver mismatch.
 7. Only then decide whether a deeper migration story is warranted.
 

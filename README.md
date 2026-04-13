@@ -20,9 +20,68 @@ This repository tracks [antiwork/gumroad](https://github.com/antiwork/gumroad) a
 
 The goal is not to argue that every Inertia page should be replaced. The goal is to determine whether a narrower set of pages can benefit enough from React 19, React on Rails Pro, and React Server Components to justify a deeper proposal later.
 
-See [docs/rsc-comparison-plan.md](docs/rsc-comparison-plan.md) for the working plan, scope, and success criteria.
-See [docs/positioning-notes.md](docs/positioning-notes.md) for the product, messaging, and adjacent-idea notes this experiment should help answer.
-See [docs/current-status.md](docs/current-status.md) for the current state of the demo, readiness, and next-step checklist.
+### What this repo currently proves
+
+- `Shakapacker 10 + Rspack` is viable on this codebase and materially faster for local builds.
+- A bounded `React on Rails Pro + RSC` dashboard slice can beat a matched `Inertia` control on `LCP` and total navigation duration.
+- The current tradeoff is still real: the matched `RSC` route is modestly slower on server `responseEnd`.
+
+Current matched local result on the reduced dashboard surface:
+
+- Inertia navigation duration: `492.03ms`
+- RSC navigation duration: `429.90ms`
+- Inertia `LCP`: `496.00ms`
+- RSC `LCP`: `452.00ms`
+- Inertia `responseEnd`: `344.90ms`
+- RSC `responseEnd`: `371.20ms`
+
+This is enough for a real positioning story.
+It is not yet enough for an upstream migration pitch.
+
+### Demo surface
+
+The repo currently exposes two comparison routes that use the same reduced seller-data surface:
+
+- `https://gumroad.dev/dashboard/inertia_demo`
+- `https://gumroad.dev/dashboard/rsc_demo`
+
+Login credentials for local verification:
+
+- email: `seller@gumroad.com`
+- password: `password`
+- two-factor code: `000000`
+
+### Verified screenshots
+
+These screenshots were captured from a signed-in local session on this branch.
+
+| Inertia control                               | React on Rails Pro + RSC              |
+| --------------------------------------------- | ------------------------------------- |
+| ![Inertia demo](docs/images/inertia-demo.png) | ![RSC demo](docs/images/rsc-demo.png) |
+
+### How to reproduce the comparison locally
+
+1. Start local services: `LOCAL_DETACHED=true make local`
+2. Prepare the database: `bin/rails db:prepare`
+3. Start the app runtime in separate terminals:
+   `bundle exec rails s -b 0.0.0.0 -p 3000`
+   `npm run setup && ./bin/shakapacker-dev-server`
+   `node client/node-renderer.cjs`
+4. Open the two demo routes and compare:
+   `/dashboard/inertia_demo`
+   `/dashboard/rsc_demo`
+
+If you want the measured benchmark artifacts instead of a visual spot check, start with [docs/performance-findings.md](docs/performance-findings.md).
+
+### Shareable docs
+
+- [docs/current-status.md](docs/current-status.md)
+- [docs/performance-findings.md](docs/performance-findings.md)
+- [docs/performance-team-handoff.md](docs/performance-team-handoff.md)
+- [docs/rsc-comparison-plan.md](docs/rsc-comparison-plan.md)
+- [docs/positioning-notes.md](docs/positioning-notes.md)
+- [docs/gumroad-upstream-issue-draft.md](docs/gumroad-upstream-issue-draft.md)
+- [docs/youtube-demo-script.md](docs/youtube-demo-script.md)
 
 ## Table of Contents
 
