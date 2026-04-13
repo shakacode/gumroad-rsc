@@ -6,6 +6,7 @@ import { RspackManifestPlugin } from "rspack-manifest-plugin";
 import tsCast from "ts-safe-cast/transformer.js";
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer";
 
+import getEnvironment from "./environment.js";
 import shakapackerConfig from "./shakapacker.js";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,8 +17,8 @@ const additionalPaths = shakapackerConfig.additional_paths.map((dir) => path.joi
 const outputPath = path.join(rootPath, shakapackerConfig.public_root_path, shakapackerConfig.public_output_path);
 const assetHost = process.env.SHAKAPACKER_ASSET_HOST || "/";
 const publicOutputPath = `${assetHost.endsWith("/") ? assetHost : `${assetHost}/`}${shakapackerConfig.public_output_path}/`;
-const nodeEnv = process.env.NODE_ENV || process.env.RAILS_ENV || "development";
-const isProduction = nodeEnv === "production";
+const environment = getEnvironment();
+const isProduction = environment === "production";
 const hash = isProduction ? "-[contenthash]" : "";
 const miniCssHash = isProduction ? "-[contenthash:8]" : "";
 const mode = isProduction ? "production" : "development";
