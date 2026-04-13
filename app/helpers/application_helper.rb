@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 module ApplicationHelper
+  def content_security_policy_nonce(_directive = nil)
+    SecureHeaders.content_security_policy_script_nonce(request)
+  end
+
   def load_pack(page)
     render("shared/pack_setup", page:)
   end

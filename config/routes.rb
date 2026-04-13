@@ -748,7 +748,11 @@ Rails.application.routes.draw do
     post "/products/:id/release_preorder", to: "links#release_preorder", as: :release_preorder
 
 
+    rsc_payload_route path: "rsc_payload"
+
     get "/dashboard" => "dashboard#index", as: :dashboard
+    get "/dashboard/inertia_demo" => "dashboard#inertia_demo", as: :dashboard_inertia_demo
+    get "/dashboard/rsc_demo" => "dashboard_rsc_demo#index", as: :dashboard_rsc_demo
     get "/dashboard/customers_count" => "dashboard#customers_count", as: :dashboard_customers_count
     get "/dashboard/total_revenue" => "dashboard#total_revenue", as: :dashboard_total_revenue
     get "/dashboard/active_members_count" => "dashboard#active_members_count", as: :dashboard_active_members_count

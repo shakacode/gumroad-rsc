@@ -6,8 +6,10 @@ Rails.application.config.after_initialize do
     ProductPresenter::ProductProps::SALES_COUNT_CACHE_KEY_REFIX => ProductPresenter::ProductProps::SALES_COUNT_CACHE_METRICS_KEY,
   }
   ActiveSupport::Notifications.subscribe "cache_read.active_support" do |event|
+    cache_keys = Array(event.payload[:key]).grep(String)
+
     cache_to_metric_keys.each do |key_prefix, metrics_key|
-      if event.payload[:key].starts_with?(key_prefix)
+      if cache_keys.any? { |key| key.starts_with?(key_prefix) }
         $redis.hincrby(metrics_key, event.payload[:hit] ? "hits" : "misses", 1)
         break
       end

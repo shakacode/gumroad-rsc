@@ -60,6 +60,9 @@
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.2.5",
     "react-media-recorder": "^1.7.1",
+    "react-on-rails-pro": "16.6.0",
+    "react-on-rails-pro-node-renderer": "16.6.0",
+    "react-on-rails-rsc": "19.0.4",
     "react-router-dom": "^6.11.1",
     "react-select": "^5.7.0",
     "react-sortablejs": "^6.1.4",
@@ -116,7 +119,9 @@
     "terser-webpack-plugin": "^5.3.6",
     "typescript": "~5.5.0",
     "typescript-eslint": "^8.0.0",
+    "webpack": "^5.106.1",
     "webpack-bundle-analyzer": "^4.7.0",
+    "webpack-cli": "^6.0.1",
     "webpack-merge": "^6.0.0"
   },
   "overrides": {
@@ -143,7 +148,9 @@
   },
   "scripts": {
     "build": "bin/shakapacker",
+    "build:rsc-demo": "webpack --config config/webpack/rsc_demo.config.cjs",
     "watch": "bin/shakapacker --watch",
+    "watch:rsc-demo": "webpack --watch --config config/webpack/rsc_demo.config.cjs",
     "analyze": "WEBPACK_ANALYZE=1 bin/shakapacker",
     "lint-fast": "DISABLE_TYPE_CHECKED=1 npx eslint",
     "setup": "bundle exec rails js:export",

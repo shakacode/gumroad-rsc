@@ -1,0 +1,264 @@
+@import "definitions";
+
+.dd {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background: var(--body-bg);
+  color: full-color(color);
+
+  @include breakpoint-up(lg) {
+    flex-direction: row;
+  }
+}
+
+.dd a {
+  color: inherit;
+}
+
+.dd-side {
+  display: flex;
+  width: 100%;
+  flex-shrink: 0;
+  flex-direction: column;
+  background: #111;
+  color: #fff;
+  --color: 255 255 255;
+
+  @include breakpoint-up(lg) {
+    width: 16rem;
+  }
+}
+
+.dd-brand,
+.dd-meta,
+.dd-header,
+.dd-body {
+  padding: spacer(4);
+}
+
+.dd-brand {
+  border-bottom: $border-width solid rgb(255 255 255 / 0.12);
+}
+
+.dd-brand a,
+.dd-header h1,
+.dd-section h2,
+.dd-metrics strong {
+  font-weight: 600;
+}
+
+.dd-brand a {
+  @include font-size(4);
+  text-decoration: none;
+}
+
+.dd-brand p,
+.dd-meta p,
+.dd-header p,
+.dd-section header p,
+.dd-metrics p,
+.dd-stamp {
+  @include font-size(1);
+  color: rgb(var(--color) / 0.65);
+}
+
+.dd-brand p,
+.dd-meta p,
+.dd-header p,
+.dd-metrics strong,
+.dd-section,
+.dd-empty p + p {
+  margin-top: spacer(2);
+}
+
+.dd-nav {
+  display: grid;
+  gap: spacer(1);
+  padding: spacer(3);
+}
+
+.dd-nav a,
+.dd-btn {
+  @include transition(background-color, border-color, color);
+  border-radius: border-radius(1);
+  text-decoration: none;
+}
+
+.dd-nav a {
+  padding: spacer(3) spacer(4);
+}
+
+.dd-nav a:hover,
+.dd-nav a[aria-current="page"] {
+  background: rgb(255 255 255 / 0.12);
+}
+
+.dd-meta {
+  margin-top: auto;
+  border-top: $border-width solid rgb(255 255 255 / 0.12);
+}
+
+.dd-meta strong {
+  display: block;
+}
+
+.dd-main {
+  min-width: 0;
+  flex: 1;
+  contain: paint;
+}
+
+.dd-header {
+  display: grid;
+  gap: spacer(4);
+  border-bottom: $border-width solid $border-color;
+
+  @include breakpoint-up(lg) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+}
+
+.dd-header h1 {
+  @include font-size(5);
+}
+
+.dd-actions {
+  display: grid;
+  gap: spacer(2);
+
+  @include breakpoint-up(sm) {
+    grid-auto-flow: column;
+  }
+}
+
+.dd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: spacer(1);
+  border: $border-width solid $border-color;
+  padding: spacer(2) spacer(3);
+  background: rgb(var(--filled));
+}
+
+.dd-btn:hover {
+  background: gray(1);
+}
+
+.dd-body {
+  display: grid;
+  gap: spacer(4);
+
+  @include breakpoint-up(sm) {
+    gap: spacer(5);
+  }
+}
+
+.dd-note,
+.dd-metrics > article,
+.dd-empty,
+.dd-table,
+.dd-list {
+  border: $border-width solid $border-color;
+  border-radius: border-radius(1);
+  background: rgb(var(--filled));
+}
+
+.dd-note {
+  padding: spacer(3);
+  background: rgb(var(--accent) / 0.12);
+  border-color: rgb(var(--accent) / 0.4);
+}
+
+.dd-note.is-warning {
+  background: rgb(var(--warning) / 0.12);
+  border-color: rgb(var(--warning) / 0.4);
+}
+
+.dd-note.is-info {
+  background: rgb(var(--info) / 0.12);
+  border-color: rgb(var(--info) / 0.4);
+}
+
+.dd-metrics {
+  display: grid;
+  gap: spacer(3);
+
+  @include breakpoint-up(sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include breakpoint-up(lg) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.dd-metrics > article,
+.dd-empty {
+  padding: spacer(4);
+}
+
+.dd-metrics strong {
+  @include font-size(5);
+  display: block;
+}
+
+.dd-section {
+  display: grid;
+  gap: spacer(3);
+}
+
+.dd-table {
+  overflow-x: auto;
+}
+
+.dd-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dd-table th,
+.dd-table td {
+  padding: spacer(3);
+  border-top: $border-width solid $border-color;
+  text-align: left;
+}
+
+.dd-table thead th {
+  border-top: 0;
+  background: gray(1);
+}
+
+.dd-list {
+  overflow: hidden;
+}
+
+.dd-row {
+  display: grid;
+  gap: spacer(2);
+  padding: spacer(3);
+  border-top: $border-width solid $border-color;
+
+  @include breakpoint-up(sm) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+.dd-row:first-child {
+  border-top: 0;
+}
+
+.dd-copy {
+  min-width: 0;
+}
+
+.dd-copy strong {
+  font-weight: 600;
+}
+
+.dd-stamp {
+  white-space: nowrap;
+}

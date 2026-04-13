@@ -12,11 +12,14 @@ require "uri"
 
 DEFAULTS = {
   base_url: "http://127.0.0.1:3000",
+  measure_base_url: nil,
+  path: "/dashboard",
   email: "seller@gumroad.com",
   password: "password",
   output_dir: File.expand_path("../../output/playwright/dashboard-perf", __dir__),
   label: "local",
   runs: 3,
+  server_warmup_requests: 0,
   timeout: 30,
   headed: false
 }.freeze
@@ -28,11 +31,14 @@ def parse_options
     parser.banner = "Usage: ruby scripts/perf/measure_dashboard.rb [options]"
 
     parser.on("--base-url URL", String) { |value| options[:base_url] = value.sub(%r{/$}, "") }
+    parser.on("--measure-base-url URL", String) { |value| options[:measure_base_url] = value.sub(%r{/$}, "") }
+    parser.on("--path PATH", String) { |value| options[:path] = value.start_with?("/") ? value : "/#{value}" }
     parser.on("--email EMAIL", String) { |value| options[:email] = value }
     parser.on("--password PASSWORD", String) { |value| options[:password] = value }
     parser.on("--output-dir PATH", String) { |value| options[:output_dir] = File.expand_path(value) }
     parser.on("--label LABEL", String) { |value| options[:label] = value }
     parser.on("--runs N", Integer) { |value| options[:runs] = value }
+    parser.on("--server-warmup-requests N", Integer) { |value| options[:server_warmup_requests] = value }
     parser.on("--timeout SECONDS", Integer) { |value| options[:timeout] = value }
     parser.on("--headed") { options[:headed] = true }
   end.parse!
@@ -302,15 +308,19 @@ def log_in(driver, base_url:, email:, password:, timeout:)
   end
 end
 
-def dashboard_metrics(driver)
+def page_metrics(driver)
   driver.execute_script(<<~JS)
     const navigation = performance.getEntriesByType("navigation")[0];
     const resources = performance.getEntriesByType("resource");
     const packsResources = resources.filter((entry) => entry.name.includes("/packs/"));
     const jsResources = packsResources.filter((entry) => entry.name.endsWith(".js"));
     const cssResources = packsResources.filter((entry) => entry.name.endsWith(".css"));
+    const rscPayloadResources = resources.filter((entry) => entry.name.includes("/rsc_payload/"));
     const dataPage = document.querySelector("[data-page]")?.getAttribute("data-page") ?? null;
     const heading = document.querySelector("h1")?.textContent?.trim() ?? null;
+    const pageTitle = document.title ?? null;
+    const htmlBytes = document.documentElement?.outerHTML?.length ?? null;
+    const bodyTextBytes = document.body?.innerText?.length ?? null;
 
     const summarizeResources = (entries) => ({
       count: entries.length,
@@ -334,12 +344,16 @@ def dashboard_metrics(driver)
       timestamp: new Date().toISOString(),
       url: window.location.href,
       heading,
+      pageTitle,
       inertiaDataPageBytes: dataPage?.length ?? null,
+      htmlBytes,
+      bodyTextBytes,
       navigation: navigation ? {
         domContentLoadedMs: navigation.domContentLoadedEventEnd,
         loadEventMs: navigation.loadEventEnd,
         responseEndMs: navigation.responseEnd,
         durationMs: navigation.duration,
+        responseStatus: navigation.responseStatus ?? null,
         transferSize: navigation.transferSize || 0,
         encodedBodySize: navigation.encodedBodySize || 0,
         decodedBodySize: navigation.decodedBodySize || 0
@@ -350,7 +364,8 @@ def dashboard_metrics(driver)
         js: summarizeResources(jsResources),
         css: summarizeResources(cssResources),
         largest: largestResources
-      }
+      },
+      rscPayload: summarizeResources(rscPayloadResources)
     };
   JS
 end
@@ -360,6 +375,52 @@ def average(values)
   return nil if present.empty?
 
   (present.sum.to_f / present.length).round(2)
+end
+
+def page_url(base_url, path)
+  URI.join("#{base_url}/", path.delete_prefix("/")).to_s
+end
+
+def warm_target_route(target_url:, cookies:, requests:)
+  return if requests.to_i <= 0
+
+  target_uri = URI(target_url)
+  http = build_http_client(target_uri)
+
+  requests.times do
+    response = nil
+
+    5.times do
+      response = perform_request(http, target_uri, Net::HTTP::Get.new(target_uri), cookies)
+      break if response.is_a?(Net::HTTPSuccess)
+
+      sleep 0.5
+    end
+
+    raise "server warmup failed for #{target_url}: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+  end
+end
+
+def validate_metrics!(metrics, target_url:)
+  response_status = metrics.dig("navigation", "responseStatus")
+  heading = metrics["heading"].to_s
+  page_title = metrics["pageTitle"].to_s
+
+  if response_status.to_i >= 400
+    raise "page load failed for #{target_url}: HTTP #{response_status} (heading: #{heading.inspect}, title: #{page_title.inspect})"
+  end
+
+  return unless [heading, page_title].any? { |value| value.match?(/ReactOnRails::PrerenderError|Internal Server Error|Routing Error|Action Controller: Exception/i) }
+
+  raise "page load rendered an error page for #{target_url} (heading: #{heading.inspect}, title: #{page_title.inspect})"
+end
+
+def path_slug(path)
+  path
+    .delete_prefix("/")
+    .gsub(%r{[^a-zA-Z0-9]+}, "-")
+    .gsub(/\A-+|-+\z/, "")
+    .yield_self { |value| value.empty? ? "root" : value }
 end
 
 def summarize_runs(runs)
@@ -378,6 +439,8 @@ def summarize_runs(runs)
       size: average(runs.map { |run| run.dig("lcp", "size") })
     },
     inertiaDataPageBytes: average(runs.map { |run| run["inertiaDataPageBytes"] }),
+    htmlBytes: average(runs.map { |run| run["htmlBytes"] }),
+    bodyTextBytes: average(runs.map { |run| run["bodyTextBytes"] }),
     packs: {
       transferSize: average(runs.map { |run| run.dig("packs", "all", "transferSize") }),
       encodedBodySize: average(runs.map { |run| run.dig("packs", "all", "encodedBodySize") }),
@@ -386,6 +449,12 @@ def summarize_runs(runs)
       cssTransferSize: average(runs.map { |run| run.dig("packs", "css", "transferSize") }),
       jsCount: average(runs.map { |run| run.dig("packs", "js", "count") }),
       cssCount: average(runs.map { |run| run.dig("packs", "css", "count") })
+    },
+    rscPayload: {
+      transferSize: average(runs.map { |run| run.dig("rscPayload", "transferSize") }),
+      encodedBodySize: average(runs.map { |run| run.dig("rscPayload", "encodedBodySize") }),
+      decodedBodySize: average(runs.map { |run| run.dig("rscPayload", "decodedBodySize") }),
+      count: average(runs.map { |run| run.dig("rscPayload", "count") })
     }
   }
 end
@@ -398,45 +467,63 @@ end
 def main
   options = parse_options
   FileUtils.mkdir_p(options[:output_dir])
+  measure_base_url = options[:measure_base_url] || options[:base_url]
+  target_url = page_url(measure_base_url, options[:path])
+  target_slug = path_slug(options[:path])
   cookies = authenticated_cookies(
     base_url: options[:base_url],
     email: options[:email],
     password: options[:password]
+  )
+  warm_target_route(
+    target_url: target_url,
+    cookies: cookies.each_with_object({}) { |cookie, memo| memo["#{cookie[:domain]}:#{cookie[:name]}"] = cookie },
+    requests: options[:server_warmup_requests]
   )
 
   runs = []
 
   options[:runs].times do |index|
     driver = build_driver(headed: options[:headed])
-    add_lcp_observer(driver)
-    driver.navigate.to(options[:base_url])
-    cookies.each { |cookie| driver.manage.add_cookie(cookie_attributes(cookie)) }
-    driver.navigate.refresh
 
-    driver.navigate.to("#{options[:base_url]}/dashboard")
-    wait_for_page_load(driver, timeout: options[:timeout])
-    wait_for(driver, timeout: options[:timeout]) { driver.find_elements(css: "h1").any? }
+    begin
+      add_lcp_observer(driver)
+      driver.navigate.to(measure_base_url)
+      cookies.each { |cookie| driver.manage.add_cookie(cookie_attributes(cookie)) }
+      driver.navigate.refresh
 
-    metrics = dashboard_metrics(driver)
-    metrics["run"] = index + 1
-    runs << metrics
+      driver.navigate.to(target_url)
+      wait_for_page_load(driver, timeout: options[:timeout])
+      wait_for(driver, timeout: options[:timeout], message: "#{target_url} did not render an h1") do
+        driver.find_elements(css: "h1").any?
+      end
 
-    if index.zero?
-      driver.save_screenshot(File.join(options[:output_dir], "#{options[:label]}-dashboard.png"))
+      metrics = page_metrics(driver)
+      validate_metrics!(metrics, target_url:)
+      metrics["run"] = index + 1
+      runs << metrics
+
+      if index.zero?
+        driver.save_screenshot(File.join(options[:output_dir], "#{options[:label]}-#{target_slug}.png"))
+      end
+    ensure
+      driver.quit
     end
-
-    driver.quit
   end
 
   summary = {
     label: options[:label],
     baseUrl: options[:base_url],
+    measureBaseUrl: measure_base_url,
+    path: options[:path],
+    targetUrl: target_url,
     runs: options[:runs],
+    serverWarmupRequests: options[:server_warmup_requests],
     averages: summarize_runs(runs),
     samples: runs
   }
 
-  output_path = File.join(options[:output_dir], "#{options[:label]}-dashboard-metrics.json")
+  output_path = File.join(options[:output_dir], "#{options[:label]}-#{target_slug}-metrics.json")
   File.write(output_path, JSON.pretty_generate(summary))
   puts JSON.pretty_generate(summary)
 end

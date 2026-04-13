@@ -3,9 +3,9 @@
 class DashboardController < Sellers::BaseController
   include ActionView::Helpers::NumberHelper, CurrencyHelper
 
-  before_action :check_payment_details, only: :index
+  before_action :check_payment_details, only: [:index, :inertia_demo]
 
-  layout "inertia", only: :index
+  layout "inertia", only: [:index, :inertia_demo]
 
   def index
     authorize :dashboard
@@ -17,6 +17,17 @@ class DashboardController < Sellers::BaseController
       presenter = CreatorHomePresenter.new(pundit_user)
       render inertia: "Dashboard/Index",
              props: { creator_home: presenter.creator_home_props }
+    end
+  end
+
+  def inertia_demo
+    authorize :dashboard, :index?
+
+    if current_seller.suspended_for_tos_violation?
+      redirect_to products_url
+    else
+      LargeSeller.create_if_warranted(current_seller)
+      render inertia: "Dashboard/InertiaDemo", props: dashboard_comparison_props
     end
   end
 
@@ -66,4 +77,17 @@ class DashboardController < Sellers::BaseController
 
     head :ok
   end
+
+  private
+    def dashboard_comparison_props
+      custom_context = RenderingExtension.custom_context(view_context)
+      creator_home = CreatorHomePresenter.new(pundit_user).creator_home_rsc_demo_props
+
+      {
+        locale: custom_context[:locale],
+        seller_display_name: custom_context.dig(:current_seller, :name).presence || custom_context.dig(:logged_in_user, :name).presence || "Gumroad",
+        seller_time_zone: creator_home[:activity_items].present? ? custom_context.dig(:current_seller, :time_zone, :name) : nil,
+        creator_home:,
+      }.compact
+    end
 end

@@ -197,3 +197,5 @@ group :development do
   gem "derailed_benchmarks", "~> 2.1"
   gem "bullet"
 end
+
+gem "react_on_rails_pro", "= 16.6.0"
