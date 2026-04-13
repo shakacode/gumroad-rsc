@@ -174,8 +174,9 @@ Recommended order:
 2. Decide whether React 19 type cleanup belongs in the same branch or in a follow-up stacked branch.
 3. Treat `/dashboard/inertia_demo` as the primary Inertia control, not the full dashboard.
 4. Keep `/dashboard/rsc_demo`, but treat the remaining `responseEnd` gap as renderer or streaming overhead, not just raw HTML weight.
-5. Re-run the matched comparison after fixing the local Chrome and chromedriver mismatch.
-6. Only then decide whether a deeper migration story is warranted.
+5. Keep CI honest by validating both the demo controller specs and the standalone `npm run build:rsc-demo` path, because those demo bundles are not emitted by the main Shakapacker/Rspack build.
+6. Re-run the matched comparison after fixing the local Chrome and chromedriver mismatch.
+7. Only then decide whether a deeper migration story is warranted.
 
 ## Suggested branch sequence
 
