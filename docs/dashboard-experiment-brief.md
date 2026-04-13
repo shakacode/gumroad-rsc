@@ -17,12 +17,12 @@ That makes it easier to ask whether React on Rails Pro plus React 19 can improve
 ### Rails controller
 
 - Route: `/dashboard`
-- Controller: [app/controllers/dashboard_controller.rb](/Users/justin/codex/gumroad-rsc/app/controllers/dashboard_controller.rb)
+- Controller: [app/controllers/dashboard_controller.rb](../app/controllers/dashboard_controller.rb)
 - Rendering path: `render inertia: "Dashboard/Index", props: { creator_home: presenter.creator_home_props }`
 
 ### Presenter
 
-- Presenter: [app/presenters/creator_home_presenter.rb](/Users/justin/codex/gumroad-rsc/app/presenters/creator_home_presenter.rb)
+- Presenter: [app/presenters/creator_home_presenter.rb](../app/presenters/creator_home_presenter.rb)
 - Main responsibility: build the `creator_home` payload for the page
 
 The presenter currently assembles:
@@ -36,13 +36,13 @@ The presenter currently assembles:
 
 ### Inertia page wrapper
 
-- Entry: [app/javascript/pages/Dashboard/Index.tsx](/Users/justin/codex/gumroad-rsc/app/javascript/pages/Dashboard/Index.tsx)
+- Entry: [app/javascript/pages/Dashboard/Index.tsx](../app/javascript/pages/Dashboard/Index.tsx)
 
 This wrapper is intentionally thin. It simply reads `creator_home` from Inertia props and passes it into the page component.
 
 ### Main React page
 
-- Component: [app/javascript/components/DashboardPage.tsx](/Users/justin/codex/gumroad-rsc/app/javascript/components/DashboardPage.tsx)
+- Component: [app/javascript/components/DashboardPage.tsx](../app/javascript/components/DashboardPage.tsx)
 
 The page currently renders:
 
@@ -94,8 +94,8 @@ These are already simple and may not benefit enough to matter.
 
 Relevant existing files:
 
-- [spec/controllers/dashboard_controller_spec.rb](/Users/justin/codex/gumroad-rsc/spec/controllers/dashboard_controller_spec.rb)
-- [spec/presenters/creator_home_presenter_spec.rb](/Users/justin/codex/gumroad-rsc/spec/presenters/creator_home_presenter_spec.rb)
+- [spec/controllers/dashboard_controller_spec.rb](../spec/controllers/dashboard_controller_spec.rb)
+- [spec/presenters/creator_home_presenter_spec.rb](../spec/presenters/creator_home_presenter_spec.rb)
 
 This is useful because the experiment can preserve and extend a bounded spec surface instead of inventing new coverage from scratch.
 
