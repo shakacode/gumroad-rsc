@@ -8,6 +8,14 @@ It is **not** ready for an upstream pitch yet, but it is no longer just a compil
 
 This repository has moved past pure planning, through the Rspack migration branch, and into a matched Inertia-versus-React on Rails Pro comparison surface.
 
+## Shareable references
+
+- repo: [shakacode/gumroad-rsc](https://github.com/shakacode/gumroad-rsc)
+- stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/gumroad-rsc/pull/1)
+- stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2)
+- stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/gumroad-rsc/pull/3)
+- React on Rails issue: [react_on_rails#3128](https://github.com/shakacode/react_on_rails/issues/3128)
+
 ## What is already done
 
 - Created the public experiment repo under `shakacode/gumroad-rsc`
@@ -174,7 +182,7 @@ Recommended order:
 2. Decide whether React 19 type cleanup belongs in the same branch or in a follow-up stacked branch.
 3. Treat `/dashboard/inertia_demo` as the primary Inertia control, not the full dashboard.
 4. Keep `/dashboard/rsc_demo`, but treat the remaining `responseEnd` gap as renderer or streaming overhead, not just raw HTML weight.
-5. Keep CI honest by validating both the demo controller specs and the standalone `npm run build:rsc-demo` path, because those demo bundles are not emitted by the main Shakapacker/Rspack build.
+5. Keep CI honest by preserving the existing demo validation path: the asset build already runs `npm run build:rsc-demo`, and the standard spec matrix covers the demo controllers.
 6. Re-run the matched comparison after fixing the local Chrome and chromedriver mismatch.
 7. Only then decide whether a deeper migration story is warranted.
 

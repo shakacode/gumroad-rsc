@@ -12,6 +12,14 @@ Both routes use the same reduced creator-home presenter surface and the same out
 The goal is not to prove that "RSC is always faster."
 The goal is to measure whether a bounded RSC surface can produce a meaningful user-visible win that justifies the added complexity.
 
+## Shareable references
+
+- repo: [shakacode/gumroad-rsc](https://github.com/shakacode/gumroad-rsc)
+- stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/gumroad-rsc/pull/1)
+- stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2)
+- stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/gumroad-rsc/pull/3)
+- React on Rails issue: [react_on_rails#3128](https://github.com/shakacode/react_on_rails/issues/3128)
+
 ## Current conclusion
 
 The current RSC implementation is **promising but not fully optimized**.
@@ -122,14 +130,21 @@ Start here:
 - [dashboard-experiment-brief.md](./dashboard-experiment-brief.md)
 - [positioning-notes.md](./positioning-notes.md)
 
+## CI validation status
+
+The new demo surface is already covered in CI in two important ways:
+
+- the asset build path runs `npm run build:rsc-demo` during image compilation in [`docker/web/compile_assets.sh`](../docker/web/compile_assets.sh)
+- the standard test matrix covers the demo controller specs, so the new routes are not relying only on local verification
+
 ## Key artifacts
 
 - [matched comparison JSON](../output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json)
 - [Inertia metrics JSON](../output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json)
 - [RSC metrics JSON](../output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json)
 
-## Important caveat
+## Current sharing status
 
-The repo `shakacode/gumroad-rsc` is public, but the current branch work in this local checkout is **not yet committed or pushed**.
+The repo is public, the stacked PRs are open, and the React on Rails issue is available as the team-facing discussion hub.
 
-So the docs and artifacts exist locally right now, but they are not yet shareable by URL until a commit/push pass is done.
+The JSON artifacts linked above are local benchmark outputs, so they are shareable through the repo checkout and branch work, but not through GitHub artifact hosting.
