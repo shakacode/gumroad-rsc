@@ -6,7 +6,7 @@ Date captured: `2026-04-12`
 
 Compared implementations:
 
-- baseline Inertia plus Webpack from `/Users/justin/codex/gumroad-rsc-baseline`
+- baseline Inertia plus Webpack from the `gumroad-rsc-baseline` worktree
 - current Inertia plus Rspack plus React 19 from this repo on `jg-codex/react19-rspack`
 
 Important framing:
@@ -29,24 +29,24 @@ Local setup notes:
 
 ## Bundler Baseline
 
-| Metric | Baseline Webpack | Current Rspack | Delta |
-| --- | ---: | ---: | ---: |
-| Cold production build | `25.19s` | `11.25s` | `-55.3%` |
-| Cold development build | `16.24s` | `5.28s` | `-67.5%` |
-| Built `inertia` entrypoint bytes | `763,454` | `803,865` | `+5.3%` |
-| Dashboard navigation duration | `475.33ms` | `483.30ms` | `+1.7%` |
-| Dashboard response end | `358.23ms` | `338.00ms` | `-5.7%` |
-| Dashboard LCP | `497.33ms` | `509.33ms` | `+2.4%` |
-| Dashboard packs transfer | `250,170` bytes | `349,054` bytes | `+39.5%` |
-| Dashboard JS request count | `9` | `11` | `+22.2%` |
-| Largest dashboard JS chunk | `160,657` bytes | `263,358` bytes | `+63.9%` |
+| Metric                           | Baseline Webpack |  Current Rspack |    Delta |
+| -------------------------------- | ---------------: | --------------: | -------: |
+| Cold production build            |         `25.19s` |        `11.25s` | `-55.3%` |
+| Cold development build           |         `16.24s` |         `5.28s` | `-67.5%` |
+| Built `inertia` entrypoint bytes |        `763,454` |       `803,865` |  `+5.3%` |
+| Dashboard navigation duration    |       `475.33ms` |      `483.30ms` |  `+1.7%` |
+| Dashboard response end           |       `358.23ms` |      `338.00ms` |  `-5.7%` |
+| Dashboard LCP                    |       `497.33ms` |      `509.33ms` |  `+2.4%` |
+| Dashboard packs transfer         |  `250,170` bytes | `349,054` bytes | `+39.5%` |
+| Dashboard JS request count       |              `9` |            `11` | `+22.2%` |
+| Largest dashboard JS chunk       |  `160,657` bytes | `263,358` bytes | `+63.9%` |
 
 Artifacts:
 
-- [baseline screenshot](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/baseline-webpack-dashboard.png)
-- [current screenshot](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/current-rspack-dashboard.png)
-- [baseline metrics JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/baseline-webpack-dashboard-metrics.json)
-- [current metrics JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/current-rspack-dashboard-metrics.json)
+- [baseline screenshot](../output/playwright/dashboard-perf/baseline-webpack-dashboard.png)
+- [current screenshot](../output/playwright/dashboard-perf/current-rspack-dashboard.png)
+- [baseline metrics JSON](../output/playwright/dashboard-perf/baseline-webpack-dashboard-metrics.json)
+- [current metrics JSON](../output/playwright/dashboard-perf/current-rspack-dashboard-metrics.json)
 
 ## Interpretation Of The Bundler Branch
 
@@ -87,8 +87,8 @@ Important caveats:
 
 Artifacts:
 
-- [isolated RSC metrics JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/rsc-isolated-3-dashboard-rsc-demo-metrics.json)
-- [dashboard asset comparison JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/dashboard-vs-rsc-asset-comparison.json)
+- [isolated RSC metrics JSON](../output/playwright/dashboard-perf/rsc-isolated-3-dashboard-rsc-demo-metrics.json)
+- [dashboard asset comparison JSON](../output/playwright/dashboard-perf/dashboard-vs-rsc-asset-comparison.json)
 
 ## Interpretation Of The First RSC Pass
 
@@ -118,9 +118,9 @@ Why this comparison matters more:
 
 Artifacts:
 
-- [Inertia control metrics JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json)
-- [RSC matched metrics JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json)
-- [warmed matched comparison JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json)
+- [Inertia control metrics JSON](../output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json)
+- [RSC matched metrics JSON](../output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json)
+- [warmed matched comparison JSON](../output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json)
 
 ### Browser metrics
 
