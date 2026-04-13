@@ -56,4 +56,12 @@ describe DashboardRscDemoController, type: :controller do
       end
     end
   end
+
+  describe "#content_security_policy_nonce" do
+    it "exposes the secure headers nonce through the controller helper" do
+      allow(SecureHeaders).to receive(:content_security_policy_script_nonce).with(request).and_return("demo-nonce")
+
+      expect(controller.helpers.content_security_policy_nonce).to eq("demo-nonce")
+    end
+  end
 end

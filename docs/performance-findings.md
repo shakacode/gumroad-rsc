@@ -77,13 +77,13 @@ Important caveats:
 
 ### Browser metrics
 
-| Metric | Current Rspack Dashboard | First RSC Demo | Delta |
-| --- | ---: | ---: | ---: |
-| Navigation duration | `483.30ms` | `550.73ms` | `+14.0%` |
-| Response end | `338.00ms` | `486.43ms` | `+43.9%` |
-| LCP | `509.33ms` | `573.33ms` | `+12.6%` |
-| JS transfer | `349,054` bytes | `37,377` bytes | `-89.3%` |
-| JS request count | `11` | `3` | `-72.7%` |
+| Metric              | Current Rspack Dashboard | First RSC Demo |    Delta |
+| ------------------- | -----------------------: | -------------: | -------: |
+| Navigation duration |               `483.30ms` |     `550.73ms` | `+14.0%` |
+| Response end        |               `338.00ms` |     `486.43ms` | `+43.9%` |
+| LCP                 |               `509.33ms` |     `573.33ms` | `+12.6%` |
+| JS transfer         |          `349,054` bytes | `37,377` bytes | `-89.3%` |
+| JS request count    |                     `11` |            `3` | `-72.7%` |
 
 Artifacts:
 
@@ -124,13 +124,13 @@ Artifacts:
 
 ### Browser metrics
 
-| Metric | Inertia demo | RSC demo | Delta |
-| --- | ---: | ---: | ---: |
-| Navigation duration | `492.03ms` | `429.90ms` | `-12.6%` |
-| Response end | `344.90ms` | `371.20ms` | `+7.6%` |
-| LCP | `496.00ms` | `452.00ms` | `-8.9%` |
-| HTML response transfer | `14,401` bytes | `15,444` bytes | `+7.2%` |
-| JS request count | `5` | `1` | `-80.0%` |
+| Metric                 |   Inertia demo |       RSC demo |    Delta |
+| ---------------------- | -------------: | -------------: | -------: |
+| Navigation duration    |     `492.03ms` |     `429.90ms` | `-12.6%` |
+| Response end           |     `344.90ms` |     `371.20ms` |  `+7.6%` |
+| LCP                    |     `496.00ms` |     `452.00ms` |  `-8.9%` |
+| HTML response transfer | `14,401` bytes | `15,444` bytes |  `+7.2%` |
+| JS request count       |            `5` |            `1` | `-80.0%` |
 
 Additional context:
 

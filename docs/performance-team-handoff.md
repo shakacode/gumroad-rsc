@@ -40,13 +40,13 @@ Measured with:
 
 ### Main local comparison
 
-| Metric | Inertia demo | RSC demo | Delta |
-| --- | ---: | ---: | ---: |
-| Navigation duration | `492.03ms` | `429.90ms` | `-12.6%` |
-| Response end | `344.90ms` | `371.20ms` | `+7.6%` |
-| LCP | `496.00ms` | `452.00ms` | `-8.9%` |
-| HTML response transfer | `14,401` bytes | `15,444` bytes | `+7.2%` |
-| JS request count | `5` | `1` | `-80.0%` |
+| Metric                 |   Inertia demo |       RSC demo |    Delta |
+| ---------------------- | -------------: | -------------: | -------: |
+| Navigation duration    |     `492.03ms` |     `429.90ms` | `-12.6%` |
+| Response end           |     `344.90ms` |     `371.20ms` |  `+7.6%` |
+| LCP                    |     `496.00ms` |     `452.00ms` |  `-8.9%` |
+| HTML response transfer | `14,401` bytes | `15,444` bytes |  `+7.2%` |
+| JS request count       |            `5` |            `1` | `-80.0%` |
 
 ### Raw response reduction achieved during this pass
 
@@ -124,9 +124,9 @@ Start here:
 
 ## Key artifacts
 
-- [matched comparison JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json)
-- [Inertia metrics JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json)
-- [RSC metrics JSON](/Users/justin/codex/gumroad-rsc/output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json)
+- [matched comparison JSON](../output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json)
+- [Inertia metrics JSON](../output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json)
+- [RSC metrics JSON](../output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json)
 
 ## Important caveat
 
