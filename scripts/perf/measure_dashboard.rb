@@ -549,11 +549,9 @@ def summarize_run_distributions(runs)
       startTime: descriptive_stats(runs.map { |run| run.dig("lcp", "startTime") }),
       size: descriptive_stats(runs.map { |run| run.dig("lcp", "size") })
     },
-    document: {
-      inertiaDataPageBytes: descriptive_stats(runs.map { |run| run["inertiaDataPageBytes"] }),
-      htmlBytes: descriptive_stats(runs.map { |run| run["htmlBytes"] }),
-      bodyTextBytes: descriptive_stats(runs.map { |run| run["bodyTextBytes"] })
-    },
+    inertiaDataPageBytes: descriptive_stats(runs.map { |run| run["inertiaDataPageBytes"] }),
+    htmlBytes: descriptive_stats(runs.map { |run| run["htmlBytes"] }),
+    bodyTextBytes: descriptive_stats(runs.map { |run| run["bodyTextBytes"] }),
     packs: {
       transferSize: descriptive_stats(runs.map { |run| run.dig("packs", "all", "transferSize") }),
       encodedBodySize: descriptive_stats(runs.map { |run| run.dig("packs", "all", "encodedBodySize") }),
