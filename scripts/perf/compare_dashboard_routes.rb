@@ -36,7 +36,7 @@ PRIMARY_COMPARISON_METRICS = {
 }.freeze
 
 def parse_compare_options
-  options = COMPARE_DEFAULTS.dup
+  options = COMPARE_DEFAULTS.merge(paths: [])
 
   OptionParser.new do |parser|
     parser.banner = "Usage: ruby scripts/perf/compare_dashboard_routes.rb [options]"
