@@ -39,21 +39,26 @@ The goal is not to argue that every Inertia page should be replaced. The goal is
 
 - `Shakapacker 10 + Rspack` is viable on this codebase and materially faster for local builds.
 - The demo assets are route-scoped, so ordinary Inertia pages do not pay for the experiment's extra JS or CSS.
-- A bounded `React on Rails Pro + RSC` dashboard slice can beat a matched `Inertia` control on `LCP` and total navigation duration.
-- The current tradeoff is still real: the matched `RSC` route is modestly slower on server `responseEnd`.
+- A bounded `React on Rails Pro + RSC` dashboard slice can beat a matched `Inertia` control on navigation duration, `LCP`, and in the latest instrumented local pass, `responseEnd`.
+- Route-scoped `Server-Timing` now shows the `RSC` route doing less controller, presenter, and SQL work on this reduced comparison surface.
 - GitHub-hosted demo validation now includes a real browser smoke pass for both comparison routes, not just build and controller-spec checks.
 
-Current matched local result on the reduced dashboard surface:
+Latest instrumented local result on the reduced dashboard surface:
 
-- Inertia navigation duration: `492.03ms`
-- RSC navigation duration: `429.90ms`
-- Inertia `LCP`: `496.00ms`
-- RSC `LCP`: `452.00ms`
-- Inertia `responseEnd`: `344.90ms`
-- RSC `responseEnd`: `371.20ms`
+- Inertia navigation duration: `585.03ms`
+- RSC navigation duration: `461.97ms`
+- Inertia `LCP`: `610.67ms`
+- RSC `LCP`: `484.00ms`
+- Inertia `responseEnd`: `433.43ms`
+- RSC `responseEnd`: `396.50ms`
+- Inertia `action_total`: `253.73ms`
+- RSC `action_total`: `229.94ms`
 
-This is enough for a real positioning story.
-It is not yet enough for an upstream migration pitch.
+A rerun of the Inertia control after the RSC batch improved the control by about `9-10%`, so cache-order effects are real.
+Even against that more-warmed Inertia rerun, the RSC route stayed ahead.
+
+This is enough for a stronger positioning story.
+It is still not enough for an upstream migration pitch or a production-performance claim.
 
 ### Demo surface
 

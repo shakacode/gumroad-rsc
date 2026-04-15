@@ -216,6 +216,10 @@ describe DashboardController, type: :controller, inertia: true do
         expect(inertia).to render_component("Dashboard/InertiaDemo")
         expect(inertia.props[:seller_display_name]).to eq(seller.name)
         expect(inertia.props[:creator_home][:balances]).to be_present
+        expect(response.headers["Server-Timing"]).to include("action_total")
+        expect(response.headers["Server-Timing"]).to include("compare_props")
+        expect(response.headers["Server-Timing"]).to include("compare_creator_home")
+        expect(response.headers["Server-Timing"]).to include("render_dispatch")
       end
     end
 

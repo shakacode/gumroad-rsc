@@ -29,6 +29,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - Documented the first implementation-facing brief in [dashboard-experiment-brief.md](./dashboard-experiment-brief.md)
 - Documented measured results in [performance-findings.md](./performance-findings.md)
 - Added a browser-level smoke spec that renders both `/dashboard/inertia_demo` and `/dashboard/rsc_demo` through a real headless browser in CI
+- Added route-scoped `Server-Timing` instrumentation to both comparison routes and to the benchmark output
 - Installed Ruby gems locally
 - Installed `node_modules` locally
 - Brought up the Docker-backed local services
@@ -62,7 +63,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - the React 19 type fallout has not been cleaned up yet across the app
 - the broad React 19 cleanup still needs its own reviewable branch strategy
 - the full current `/dashboard` route is still too noisy for a fair RSC-versus-Inertia story
-- the matched RSC route still has a slightly slower warmed server `responseEnd` than the matched Inertia control
+- production-like benchmarking is still missing, and the latest local measurements are sensitive to cache order
 - the demo has not yet been reduced to a compelling upstream-review story
 
 ## What "demo ready" means
@@ -78,19 +79,19 @@ The demo should not be considered upstream-ready until it can show all of the fo
 
 ## Measured findings
 
-The warmed matched comparison measurements now exist.
+The matched comparison measurements now exist, and the latest local pass now includes route-scoped `Server-Timing`.
 
 Short version:
 
 - Rspack is a strong developer-performance win here
 - no route-level runtime win was expected from the bundler swap by itself
-- the warmed matched `RSC` demo beats the warmed matched `Inertia` control on total navigation duration and `LCP`
-- the warmed matched `Inertia` control still has the smaller server `responseEnd`
-- the response-end pass materially reduced the raw RSC payload, but it did not eliminate the remaining server-response penalty
+- the latest instrumented local `RSC` pass beats the matched `Inertia` control on total navigation duration, `LCP`, and `responseEnd`
+- a rerun of the Inertia control after the RSC batch improved the control by about `9-10%`, so cache order and warm-state effects are real
+- even against that more-warmed Inertia rerun, the `RSC` route still wins on browser timing and route-scoped `Server-Timing`
 
-That means the demo is now real, and there is an early performance story, but it is still a mixed tradeoff rather than a clean universal win.
+That means the demo is now real, and the performance story is stronger, but the next missing piece is repeatability rather than basic feasibility.
 
-The missing piece is no longer "can this compile?" The missing piece is "can the next RSC pass keep the LCP and navigation win while making the remaining server-response cost small enough to feel clearly worth it?"
+The missing piece is no longer "can this compile?" The missing piece is "does the favorable local result survive stricter measurement discipline and a production-like renderer setup?"
 
 The benchmark rubric for that decision now lives in [rsc-benchmark-plan.md](./rsc-benchmark-plan.md).
 
@@ -134,7 +135,7 @@ That means the repository is now ready for comparison work on this machine.
 The build path is working and the matched comparison surface is running, but two blockers remain before this is review ready as a persuasive stacked branch:
 
 - React 19 adoption still exposes broad TypeScript cleanup work across the app.
-- The warmed matched RSC pass wins on user-visible timing, but not on server response timing.
+- The strongest local result is still a development-mode measurement with confirmed cache-order sensitivity and a mismatched Chrome/chromedriver pair.
 
 Current `npx tsc --noEmit` results still show app-wide errors in categories like:
 
@@ -143,11 +144,11 @@ Current `npx tsc --noEmit` results still show app-wide errors in categories like
 - implicit `any` in callbacks that previously slipped through
 - at least one `isolatedModules`-related type-only import fix
 
-That means the branch has crossed the important threshold of "Rspack migration is viable here" and "a matched React on Rails Pro comparison is feasible here", but it has not yet crossed the threshold of "this is an easy upstream review with a strong, clean runtime-performance story."
+That means the branch has crossed the important threshold of "Rspack migration is viable here" and "a matched React on Rails Pro comparison is feasible here", but it has not yet crossed the threshold of "this is an easy upstream review with a repeatable, production-like runtime-performance story."
 
-## Current matched comparison result
+## Latest instrumented local comparison result
 
-The warmed matched Inertia-versus-RSC comparison pair is now measured.
+The latest local comparison now includes route-scoped `Server-Timing` on both routes.
 
 Short version:
 
@@ -155,25 +156,31 @@ Short version:
 - the `Inertia` control works end to end on the same reduced data surface
 - the `RSC` route now renders through the same `inertia` outer layout as the control so the comparison is cleaner
 - the response-end pass shrank the raw RSC response to nearly match the Inertia control on transfer size
-- the warmed matched `RSC` demo is faster on total navigation duration and `LCP`
-- the warmed matched `Inertia` control is still faster on server `responseEnd`
+- the first instrumented batch showed a large RSC advantage, but rerunning the Inertia control afterward improved the control by about `9-10%`
+- even against that more-warmed Inertia rerun, the `RSC` route is still faster on total navigation duration, `LCP`, and `responseEnd`
+- the route-scoped timings also show the `RSC` route ahead on `action_total`, `compare_props`, `compare_creator_home`, and `sql.active_record`
 
 Useful numbers:
 
-- warmed matched Inertia navigation duration: `492.03ms`
-- warmed matched RSC navigation duration: `429.90ms`
-- warmed matched Inertia LCP: `496.00ms`
-- warmed matched RSC LCP: `452.00ms`
-- warmed matched Inertia response end: `344.90ms`
-- warmed matched RSC response end: `371.20ms`
-- warmed matched Inertia HTML transfer: `14,401` bytes
-- warmed matched RSC HTML transfer: `15,444` bytes
+- post-RSC Inertia rerun navigation duration: `585.03ms`
+- instrumented RSC navigation duration: `461.97ms`
+- post-RSC Inertia rerun LCP: `610.67ms`
+- instrumented RSC LCP: `484.00ms`
+- post-RSC Inertia rerun response end: `433.43ms`
+- instrumented RSC response end: `396.50ms`
+- post-RSC Inertia rerun `action_total`: `253.73ms`
+- instrumented RSC `action_total`: `229.94ms`
+- post-RSC Inertia rerun `compare_props`: `225.14ms`
+- instrumented RSC `compare_props`: `194.60ms`
+- post-RSC Inertia rerun HTML transfer: `14,244` bytes
+- instrumented RSC HTML transfer: `15,265` bytes
 
 So the current conclusion is:
 
 - the comparison surface is real
 - the user-visible win is now real on the matched surface
-- the server-side tradeoff is still real, even after most of the raw response-size gap was removed
+- the latest local pass also points to a route-level server-side win
+- measurement order clearly matters, so the next step is to validate repeatability rather than declare victory
 - the performance pitch is promising, but not yet ready for upstream review
 
 ## Recommended next step
@@ -185,10 +192,10 @@ Recommended order:
 1. Preserve this branch as the "Shakapacker 10 plus Rspack viability" branch.
 2. Decide whether React 19 type cleanup belongs in the same branch or in a follow-up stacked branch.
 3. Treat `/dashboard/inertia_demo` as the primary Inertia control, not the full dashboard.
-4. Keep `/dashboard/rsc_demo`, but treat the remaining `responseEnd` gap as renderer or streaming overhead, not just raw HTML weight.
+4. Keep `/dashboard/rsc_demo`, but use the new `Server-Timing` data to isolate which parts of the controller and presenter work are actually moving the result.
 5. Keep CI honest with the GitHub-hosted demo validation workflow for this public repo: it validates the Rspack build, the targeted demo controller specs, and the standalone `npm run build:rsc-demo` path.
    It now also boots the Node renderer and runs a headless browser smoke spec for both demo routes.
-6. Re-run the matched comparison after fixing the local Chrome and chromedriver mismatch.
+6. Re-run the matched comparison with a fixed Chrome/chromedriver pair and a production-like renderer setup.
 7. Only then decide whether a deeper migration story is warranted.
 
 ## Suggested branch sequence

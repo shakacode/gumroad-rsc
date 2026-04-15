@@ -356,7 +356,12 @@ def page_metrics(driver)
         responseStatus: navigation.responseStatus ?? null,
         transferSize: navigation.transferSize || 0,
         encodedBodySize: navigation.encodedBodySize || 0,
-        decodedBodySize: navigation.decodedBodySize || 0
+        decodedBodySize: navigation.decodedBodySize || 0,
+        serverTiming: Array.from(navigation.serverTiming || []).map((entry) => ({
+          name: entry.name,
+          duration: entry.duration,
+          description: entry.description || null
+        }))
       } : null,
       lcp: window.__codexLcp,
       packs: {
@@ -498,6 +503,35 @@ def path_slug(path)
     .yield_self { |value| value.empty? ? "root" : value }
 end
 
+def collect_server_timing_entries(runs)
+  durations_by_name = Hash.new { |hash, key| hash[key] = [] }
+  descriptions_by_name = {}
+
+  runs.each do |run|
+    Array(run.dig("navigation", "serverTiming")).each do |entry|
+      name = entry["name"].to_s
+      next if name.empty?
+
+      durations_by_name[name] << entry["duration"]
+      descriptions_by_name[name] ||= entry["description"]
+    end
+  end
+
+  [durations_by_name, descriptions_by_name]
+end
+
+def summarize_server_timing_averages(runs)
+  durations_by_name, descriptions_by_name = collect_server_timing_entries(runs)
+
+  durations_by_name.keys.sort.each_with_object({}) do |name, summary|
+    summary[name] = {
+      durationMs: average(durations_by_name[name]),
+    }
+    description = descriptions_by_name[name]
+    summary[name][:description] = description unless description.to_s.empty?
+  end
+end
+
 def summarize_runs(runs)
   {
     navigation: {
@@ -525,6 +559,7 @@ def summarize_runs(runs)
       jsCount: average(runs.map { |run| run.dig("packs", "js", "count") }),
       cssCount: average(runs.map { |run| run.dig("packs", "css", "count") })
     },
+    serverTiming: summarize_server_timing_averages(runs),
     rscPayload: {
       transferSize: average(runs.map { |run| run.dig("rscPayload", "transferSize") }),
       encodedBodySize: average(runs.map { |run| run.dig("rscPayload", "encodedBodySize") }),
@@ -535,6 +570,8 @@ def summarize_runs(runs)
 end
 
 def summarize_run_distributions(runs)
+  durations_by_name, descriptions_by_name = collect_server_timing_entries(runs)
+
   {
     navigation: {
       domContentLoadedMs: descriptive_stats(runs.map { |run| run.dig("navigation", "domContentLoadedMs") }),
@@ -563,6 +600,13 @@ def summarize_run_distributions(runs)
       jsCount: descriptive_stats(runs.map { |run| run.dig("packs", "js", "count") }),
       cssCount: descriptive_stats(runs.map { |run| run.dig("packs", "css", "count") })
     },
+    serverTiming: durations_by_name.keys.sort.each_with_object({}) do |name, summary|
+      summary[name] = {
+        stats: descriptive_stats(durations_by_name[name]),
+      }
+      description = descriptions_by_name[name]
+      summary[name][:description] = description unless description.to_s.empty?
+    end,
     rscPayload: {
       transferSize: descriptive_stats(runs.map { |run| run.dig("rscPayload", "transferSize") }),
       encodedBodySize: descriptive_stats(runs.map { |run| run.dig("rscPayload", "encodedBodySize") }),
