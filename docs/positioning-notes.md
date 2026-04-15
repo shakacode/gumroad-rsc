@@ -222,9 +222,10 @@ For now, the best path is:
 - document where React on Rails Pro wins
 - treat the current Inertia plus Rspack branch as enabling infrastructure, not the runtime pitch
 - use the matched `/dashboard/inertia_demo` versus `/dashboard/rsc_demo` pair as the primary comparison surface
-- treat the current warmed matched result as promising but mixed:
+- treat the current balanced alternating result as promising but mixed:
 - the matched RSC route wins on `LCP` and total navigation duration
-- the matched Inertia route still wins on server `responseEnd`
-- note that the response-end pass cut the raw RSC response to near-parity on transfer size, but the server `responseEnd` penalty still remained
+- the matched RSC route also cuts page-specific JS requests from `6` to `1`
+- the matched Inertia route still wins on server `responseEnd` and controller `action_total`
+- note that the response-end pass cut the raw RSC response to near-parity on transfer size, but the server-side penalty still remained under the balanced method
 - require the next React on Rails Pro plus RSC pass to keep the user-visible win while narrowing the renderer or streaming overhead
 - only then decide whether the next move is docs, a public integration, a private product feature, or an upstream proposal

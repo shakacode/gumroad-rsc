@@ -21,27 +21,30 @@ The current best candidate is the reduced dashboard comparison:
 I put together a public experiment repo that tracks Gumroad and compares a matched Inertia control against a bounded React on Rails Pro + React 19 + RSC implementation on one reduced dashboard surface:
 
 - Repo: https://github.com/shakacode/gumroad-rsc
-- Comparison docs: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/react-on-rails-pro-demo/docs/performance-findings.md
+- Comparison docs: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/performance-findings.md
 
 The goal is not to argue for a broad rewrite.
 The goal is to determine whether there are specific read-heavy surfaces where a server-component-oriented approach can produce enough user-visible benefit to justify the extra complexity.
 
 ## What the current experiment shows
 
-On the matched `/dashboard/inertia_demo` versus `/dashboard/rsc_demo` comparison:
+On the matched `/dashboard/inertia_demo` versus `/dashboard/rsc_demo` comparison under the balanced alternating benchmark:
 
-- Inertia navigation duration: `492.03ms`
-- RSC navigation duration: `429.90ms`
-- Inertia LCP: `496.00ms`
-- RSC LCP: `452.00ms`
-- Inertia responseEnd: `344.90ms`
-- RSC responseEnd: `371.20ms`
+- Inertia navigation duration: `568.47ms`
+- RSC navigation duration: `501.53ms`
+- Inertia LCP: `602.00ms`
+- RSC LCP: `525.00ms`
+- Inertia responseEnd: `423.23ms`
+- RSC responseEnd: `441.65ms`
+- Inertia `action_total`: `250.50ms`
+- RSC `action_total`: `278.32ms`
 
 So the current result is:
 
 - the bounded RSC route is faster on total navigation duration
 - the bounded RSC route is faster on LCP
-- the Inertia control is still faster on server responseEnd
+- the bounded RSC route reduces page-specific JS requests from `6` to `1`
+- the Inertia control is still faster on server `responseEnd` and controller `action_total`
 
 That means this is not yet a universal performance win.
 It is a narrow, measurable tradeoff with an early user-visible upside.
@@ -67,9 +70,9 @@ It is a narrow, measurable tradeoff with an early user-visible upside.
 
 ## Links
 
-- Current status: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/react-on-rails-pro-demo/docs/current-status.md
-- Performance findings: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/react-on-rails-pro-demo/docs/performance-findings.md
-- Positioning notes: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/react-on-rails-pro-demo/docs/positioning-notes.md
+- Current status: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/current-status.md
+- Performance findings: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/performance-findings.md
+- Positioning notes: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/positioning-notes.md
 ```
 
 ## If converted into an upstream PR

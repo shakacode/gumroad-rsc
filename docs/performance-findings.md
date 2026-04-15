@@ -26,6 +26,7 @@ Local setup notes:
 - both measurements used the same Docker-backed local services and the same local database
 - route-level dashboard measurements required local Elasticsearch indices for `product_page_views`, `purchases`, and `confirmed_follower_events`
 - the dashboard harness authenticates over HTTP before loading the page in Chrome, so the measurement is not dependent on browser login behavior
+- artifact paths in this document point at local files under `output/playwright/dashboard-perf/`; they are intentionally ignored in git, so treat them as checkout-relative paths rather than GitHub links
 
 ## Bundler Baseline
 
@@ -43,10 +44,10 @@ Local setup notes:
 
 Artifacts:
 
-- [baseline screenshot](../output/playwright/dashboard-perf/baseline-webpack-dashboard.png)
-- [current screenshot](../output/playwright/dashboard-perf/current-rspack-dashboard.png)
-- [baseline metrics JSON](../output/playwright/dashboard-perf/baseline-webpack-dashboard-metrics.json)
-- [current metrics JSON](../output/playwright/dashboard-perf/current-rspack-dashboard-metrics.json)
+- baseline screenshot: `output/playwright/dashboard-perf/baseline-webpack-dashboard.png`
+- current screenshot: `output/playwright/dashboard-perf/current-rspack-dashboard.png`
+- baseline metrics JSON: `output/playwright/dashboard-perf/baseline-webpack-dashboard-metrics.json`
+- current metrics JSON: `output/playwright/dashboard-perf/current-rspack-dashboard-metrics.json`
 
 ## Interpretation Of The Bundler Branch
 
@@ -87,8 +88,8 @@ Important caveats:
 
 Artifacts:
 
-- [isolated RSC metrics JSON](../output/playwright/dashboard-perf/rsc-isolated-3-dashboard-rsc-demo-metrics.json)
-- [dashboard asset comparison JSON](../output/playwright/dashboard-perf/dashboard-vs-rsc-asset-comparison.json)
+- isolated RSC metrics JSON: `output/playwright/dashboard-perf/rsc-isolated-3-dashboard-rsc-demo-metrics.json`
+- dashboard asset comparison JSON: `output/playwright/dashboard-perf/dashboard-vs-rsc-asset-comparison.json`
 
 ## Interpretation Of The First RSC Pass
 
@@ -118,9 +119,9 @@ Why this comparison matters more:
 
 Artifacts:
 
-- [Inertia control metrics JSON](../output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json)
-- [RSC matched metrics JSON](../output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json)
-- [warmed matched comparison JSON](../output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json)
+- Inertia control metrics JSON: `output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json`
+- RSC matched metrics JSON: `output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json`
+- warmed matched comparison JSON: `output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json`
 
 ### Browser metrics
 
@@ -160,7 +161,7 @@ This is promising, but it is still not enough for an upstream migration pitch by
 
 - The win exists on a reduced comparison surface, not on the full dashboard.
 - The measurements are still local-development measurements, not production-like traces.
-- The browser harness is currently using a mismatched local Chrome and chromedriver pair, which adds noise even though the matched 3-run averages were stable enough to use.
+- The earlier grouped averages were captured before the benchmark runner could require a compatible Chrome and chromedriver pair, so they should be treated as directional rather than final.
 
 ## Server-Timing Follow-up
 
@@ -180,9 +181,9 @@ Important caveat:
 
 Artifacts:
 
-- [instrumented Inertia first-pass JSON](../output/playwright/dashboard-perf/inertia-demo-server-timing-3-dashboard-inertia-demo-metrics.json)
-- [instrumented Inertia post-RSC JSON](../output/playwright/dashboard-perf/inertia-demo-server-timing-3-post-rsc-dashboard-inertia-demo-metrics.json)
-- [instrumented RSC JSON](../output/playwright/dashboard-perf/rsc-demo-server-timing-3-dashboard-rsc-demo-metrics.json)
+- instrumented Inertia first-pass JSON: `output/playwright/dashboard-perf/inertia-demo-server-timing-3-dashboard-inertia-demo-metrics.json`
+- instrumented Inertia post-RSC JSON: `output/playwright/dashboard-perf/inertia-demo-server-timing-3-post-rsc-dashboard-inertia-demo-metrics.json`
+- instrumented RSC JSON: `output/playwright/dashboard-perf/rsc-demo-server-timing-3-dashboard-rsc-demo-metrics.json`
 
 ### Browser metrics against the warmer control
 
@@ -206,20 +207,120 @@ Artifacts:
 
 ## Interpretation Of The Server-Timing Follow-up
 
-This is the strongest local result so far, but it needs careful wording.
+This was an important intermediate result, but it should not be treated as the headline benchmark anymore.
 
 - The earlier matched result already showed a user-visible win on navigation duration and `LCP`.
-- The new instrumented pass shows that, on this local setup, the `RSC` route also stays ahead on `responseEnd` even against a more-warmed Inertia rerun.
-- The route-scoped timings suggest the RSC route is not merely shifting time around in the browser; it is also doing less app-side work in the controller/presenter path on this reduced surface.
+- The new instrumented pass showed that, on that local setup, the `RSC` route could also stay ahead on `responseEnd` against a more-warmed Inertia rerun.
+- The route-scoped timings suggested the RSC route might also be doing less app-side work in the controller/presenter path on this reduced surface.
 - The first Inertia batch overstated the gap because measurement order changed cache warmth, which is exactly why this follow-up is more credible than the raw first-pass numbers.
 
 The right conclusion is not "RSC is now proven faster everywhere."
 
 The right conclusion is:
 
-- the current local evidence is now favorable on both browser and route-level server timings
-- the signal is strong enough to justify deeper profiling and production-like measurement
-- the next step is validation and explanation, not broader migration claims yet
+- the current local evidence was strong enough to justify a stricter benchmark method
+- the next step was to validate the result under balanced route ordering
+- broader migration claims still needed a more disciplined comparison
+
+## Alternating Comparison Follow-up
+
+Date captured: `2026-04-14`
+
+What changed in this pass:
+
+- added `scripts/perf/compare_dashboard_routes.rb`
+- rotated route order by cycle instead of running grouped batches
+- used `4` cycles so each route ran first twice and second twice
+
+Artifacts:
+
+- balanced alternating comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-4-comparison.json`
+- balanced alternating run directory: `output/playwright/dashboard-perf/dashboard-demo-alternating-4-runs`
+
+### Browser metrics under balanced route ordering
+
+| Metric                 |   Inertia demo |       RSC demo |    Delta |
+| ---------------------- | -------------: | -------------: | -------: |
+| Navigation duration    |     `568.47ms` |     `501.53ms` | `-11.8%` |
+| Response end           |     `423.23ms` |     `441.65ms` |  `+4.4%` |
+| LCP                    |     `602.00ms` |     `525.00ms` | `-12.8%` |
+| HTML response transfer | `14,240.5` bytes | `15,265.0` bytes | `+7.2%` |
+| JS request count       |            `6` |            `1` | `-83.3%` |
+
+### Route-scoped server metrics under balanced route ordering
+
+| Metric                       | Inertia demo |   RSC demo |    Delta |
+| ---------------------------- | -----------: | ---------: | -------: |
+| Controller `action_total`    |   `250.50ms` | `278.32ms` | `+11.1%` |
+| Presenter `compare_props`    |   `226.41ms` | `236.16ms` |  `+4.3%` |
+| Presenter `compare_creator_home` | `209.89ms` | `220.35ms` |  `+5.0%` |
+| `sql.active_record`          |   `120.42ms` | `120.99ms` |  `+0.5%` |
+| `render_dispatch`            |    `20.57ms` |  `23.61ms` | `+14.8%` |
+
+### Position sensitivity
+
+The alternating runner also makes route-order sensitivity explicit:
+
+- Inertia when first: navigation `545.10ms`, response end `395.00ms`
+- Inertia when second: navigation `591.85ms`, response end `451.45ms`
+- RSC when first: navigation `502.90ms`, response end `443.25ms`
+- RSC when second: navigation `500.15ms`, response end `440.05ms`
+
+That means the Inertia control is more sensitive to whether it goes first or second in the cycle, while the RSC route is comparatively stable.
+But the aggregate result is still the one that matters, and the aggregate result keeps the user-visible win while preserving a modest server-side tradeoff.
+
+## Clean-driver Repeat
+
+Date captured: `2026-04-14`
+
+What changed in this pass:
+
+- re-ran the alternating comparison with a matching `Chrome 147` and `ChromeDriver 147`
+- extended the run to `8` cycles so each route ran first four times and second four times
+- recovered the final comparison summary from the completed per-run JSON files after the long run exited before writing the aggregate file
+
+Artifacts:
+
+- clean-driver comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-8-clean-driver-comparison.json`
+- clean-driver run directory: `output/playwright/dashboard-perf/dashboard-demo-alternating-8-clean-driver-runs`
+
+### Median browser metrics under the matched driver repeat
+
+| Metric              | Inertia demo |   RSC demo |    Delta |
+| ------------------- | -----------: | ---------: | -------: |
+| Navigation duration |   `544.80ms` | `396.65ms` | `-27.2%` |
+| Response end        |   `385.55ms` | `375.75ms` |  `-2.5%` |
+| LCP                 |   `568.00ms` | `426.00ms` | `-25.0%` |
+
+### What went wrong with the mean
+
+- one RSC run reported a `19.3s` duration on cached `dashboard_rsc_demo_styles.css`
+- that resource showed `0` transfer bytes and a normal `responseEnd` of `356.20ms`, so the spike was a dev-asset timing anomaly rather than a slow server response
+- the same outlier inflated the RSC mean `navigation duration` to `2822.07ms` and mean `LCP` to `2847.50ms`, which makes the mean unsuitable as the headline statistic for this repeat
+
+What still matters from this repeat:
+
+- the matched-driver rerun removed the earlier browser-driver mismatch caveat
+- route-scoped server averages were roughly neutral-to-favorable for the RSC route on this pass
+- median user-visible metrics still favored the RSC route
+
+That means the clean-driver repeat increased confidence in the benchmark discipline, but it also showed that development-mode asset timing is still noisy enough that a production-like rerun is the next real step.
+
+## Interpretation Of The Alternating Follow-up
+
+This is the benchmark result that should be used for review and positioning.
+
+- The `RSC` route still wins on total navigation duration.
+- The `RSC` route still wins on `LCP`.
+- The `RSC` route no longer wins on `responseEnd` once route order is balanced.
+- The route-scoped timings also stop supporting the stronger claim that the RSC route is currently cheaper server-side.
+
+That gives us a cleaner, more defensible story:
+
+- the user-visible win is still real
+- the client-JS reduction is still dramatic
+- the current server-side tradeoff is still real
+- the benchmark method is now strong enough that reviewers can focus on product value instead of measurement discipline
 
 ## What This Means For Positioning
 
@@ -227,7 +328,7 @@ Today’s credible story is:
 
 - `Shakapacker + Rspack` can deliver immediate build and dev-loop wins for a real Inertia app.
 - `React 19 + Rspack` is technically viable here.
-- `React on Rails Pro + RSC` now has matched-surface evidence of a user-visible win, and the latest local instrumented pass also points to a route-level server-side win.
+- `React on Rails Pro + RSC` now has matched-surface evidence of a user-visible win on a stricter alternating benchmark.
 
 Today’s non-credible story is:
 
@@ -238,7 +339,7 @@ The next demo only helps if the matched `React on Rails Pro + RSC` implementatio
 
 - equal or better LCP
 - equal or better total navigation duration
-- ideally equal or better response end once the measurement setup is controlled well enough
+- ideally equal or better response end once the implementation is tuned further
 - fewer client-side requests or bytes for the page
 - with server-response costs that are understandable and defensible
 
@@ -251,6 +352,7 @@ Keep the branches and claims narrow:
 1. Keep `jg-codex/react19-rspack` focused on bundler viability and build-speed wins.
 2. Treat React 19 type cleanup as a separate stacked branch if needed.
 3. Keep the matched `/dashboard/inertia_demo` and `/dashboard/rsc_demo` pair as the primary performance comparison surface.
-4. Re-run the same comparison after fixing the local Chrome and chromedriver mismatch so the numbers are less noisy.
-5. Repeat the instrumented comparison in a production-like renderer mode before broadening the pitch.
-6. Do not file upstream issues or pitch upstream adoption on runtime-performance grounds until the matched comparison stays favorable after that cleanup.
+4. Keep using the alternating comparison runner instead of grouped batches for future local claims.
+5. Run headline local comparisons with `--require-driver-match` so mismatched Chrome and chromedriver pairs fail fast instead of silently adding noise.
+6. Repeat the instrumented comparison in a production-like renderer and asset mode before broadening the pitch.
+7. Do not file upstream issues or pitch upstream adoption on runtime-performance grounds until the matched comparison stays favorable after that cleanup.
