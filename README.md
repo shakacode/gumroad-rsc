@@ -99,6 +99,10 @@ If you want the measured benchmark artifacts instead of a visual spot check, sta
 - [docs/gumroad-upstream-issue-draft.md](docs/gumroad-upstream-issue-draft.md)
 - [docs/youtube-demo-script.md](docs/youtube-demo-script.md)
 
+See [docs/rsc-comparison-plan.md](docs/rsc-comparison-plan.md) for the working plan, scope, and success criteria.
+See [docs/positioning-notes.md](docs/positioning-notes.md) for the product, messaging, and adjacent-idea notes this experiment should help answer.
+See [docs/current-status.md](docs/current-status.md) for the current state of the demo, readiness, and next-step checklist.
+
 ## Table of Contents
 
 - [Getting Started](#getting-started)
