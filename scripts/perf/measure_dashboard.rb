@@ -377,6 +377,81 @@ def average(values)
   (present.sum.to_f / present.length).round(2)
 end
 
+def percentile(values, percent)
+  present = values.compact.map(&:to_f).sort
+  return nil if present.empty?
+
+  index = (percent / 100.0) * (present.length - 1)
+  lower_index = index.floor
+  upper_index = index.ceil
+  lower = present[lower_index]
+  upper = present[upper_index]
+
+  (lower + ((upper - lower) * (index - lower_index))).round(2)
+end
+
+def standard_deviation(values)
+  present = values.compact.map(&:to_f)
+  return nil if present.empty?
+
+  mean = present.sum / present.length
+  variance = present.sum { |value| (value - mean)**2 } / present.length
+  Math.sqrt(variance).round(2)
+end
+
+def descriptive_stats(values)
+  present = values.compact.map(&:to_f)
+  return nil if present.empty?
+
+  {
+    count: present.length,
+    min: present.min.round(2),
+    median: percentile(present, 50),
+    p95: percentile(present, 95),
+    max: present.max.round(2),
+    stddev: standard_deviation(present)
+  }
+end
+
+def capability_value(capabilities, *keys)
+  keys.each do |key|
+    return capabilities.public_send(key) if capabilities.respond_to?(key) && !capabilities.public_send(key).nil?
+    return capabilities[key] if capabilities.respond_to?(:[]) && !capabilities[key].nil?
+    return capabilities[key.to_s] if capabilities.respond_to?(:[]) && !capabilities[key.to_s].nil?
+  end
+
+  nil
+end
+
+def browser_metadata(driver)
+  capabilities = driver.capabilities
+  chrome_capabilities = capability_value(capabilities, :chrome)
+  chrome_driver_version = if chrome_capabilities.respond_to?(:[])
+    chrome_capabilities["chromedriverVersion"]&.split&.first
+  end
+
+  {
+    browserName: capability_value(capabilities, :browser_name, :browserName),
+    browserVersion: capability_value(capabilities, :browser_version, :browserVersion),
+    platformName: capability_value(capabilities, :platform_name, :platformName),
+    chromeDriverVersion: chrome_driver_version,
+    userAgent: driver.execute_script("return navigator.userAgent")
+  }.compact
+rescue StandardError
+  nil
+end
+
+def environment_metadata
+  {
+    measuredAt: Time.now.iso8601,
+    rubyVersion: RUBY_VERSION,
+    rubyPlatform: RUBY_PLATFORM,
+    seleniumVersion: Selenium::WebDriver::VERSION,
+    ci: !ENV["CI"].nil?,
+    gitSha: ENV["GITHUB_SHA"] || ENV["REVISION"]
+  }.compact
+end
+
 def page_url(base_url, path)
   URI.join("#{base_url}/", path.delete_prefix("/")).to_s
 end
@@ -459,6 +534,42 @@ def summarize_runs(runs)
   }
 end
 
+def summarize_run_distributions(runs)
+  {
+    navigation: {
+      domContentLoadedMs: descriptive_stats(runs.map { |run| run.dig("navigation", "domContentLoadedMs") }),
+      loadEventMs: descriptive_stats(runs.map { |run| run.dig("navigation", "loadEventMs") }),
+      responseEndMs: descriptive_stats(runs.map { |run| run.dig("navigation", "responseEndMs") }),
+      durationMs: descriptive_stats(runs.map { |run| run.dig("navigation", "durationMs") }),
+      transferSize: descriptive_stats(runs.map { |run| run.dig("navigation", "transferSize") }),
+      encodedBodySize: descriptive_stats(runs.map { |run| run.dig("navigation", "encodedBodySize") }),
+      decodedBodySize: descriptive_stats(runs.map { |run| run.dig("navigation", "decodedBodySize") })
+    },
+    lcp: {
+      startTime: descriptive_stats(runs.map { |run| run.dig("lcp", "startTime") }),
+      size: descriptive_stats(runs.map { |run| run.dig("lcp", "size") })
+    },
+    inertiaDataPageBytes: descriptive_stats(runs.map { |run| run["inertiaDataPageBytes"] }),
+    htmlBytes: descriptive_stats(runs.map { |run| run["htmlBytes"] }),
+    bodyTextBytes: descriptive_stats(runs.map { |run| run["bodyTextBytes"] }),
+    packs: {
+      transferSize: descriptive_stats(runs.map { |run| run.dig("packs", "all", "transferSize") }),
+      encodedBodySize: descriptive_stats(runs.map { |run| run.dig("packs", "all", "encodedBodySize") }),
+      decodedBodySize: descriptive_stats(runs.map { |run| run.dig("packs", "all", "decodedBodySize") }),
+      jsTransferSize: descriptive_stats(runs.map { |run| run.dig("packs", "js", "transferSize") }),
+      cssTransferSize: descriptive_stats(runs.map { |run| run.dig("packs", "css", "transferSize") }),
+      jsCount: descriptive_stats(runs.map { |run| run.dig("packs", "js", "count") }),
+      cssCount: descriptive_stats(runs.map { |run| run.dig("packs", "css", "count") })
+    },
+    rscPayload: {
+      transferSize: descriptive_stats(runs.map { |run| run.dig("rscPayload", "transferSize") }),
+      encodedBodySize: descriptive_stats(runs.map { |run| run.dig("rscPayload", "encodedBodySize") }),
+      decodedBodySize: descriptive_stats(runs.map { |run| run.dig("rscPayload", "decodedBodySize") }),
+      count: descriptive_stats(runs.map { |run| run.dig("rscPayload", "count") })
+    }
+  }
+end
+
 def cookie_attributes(cookie)
   allowed = %i[name value path domain secure http_only same_site expiry]
   cookie.select { |key, _value| allowed.include?(key) && !_value.nil? }
@@ -482,6 +593,7 @@ def main
   )
 
   runs = []
+  browser = nil
 
   options[:runs].times do |index|
     driver = build_driver(headed: options[:headed])
@@ -498,6 +610,7 @@ def main
         driver.find_elements(css: "h1").any?
       end
 
+      browser ||= browser_metadata(driver)
       metrics = page_metrics(driver)
       validate_metrics!(metrics, target_url:)
       metrics["run"] = index + 1
@@ -517,9 +630,13 @@ def main
     measureBaseUrl: measure_base_url,
     path: options[:path],
     targetUrl: target_url,
+    headed: options[:headed],
     runs: options[:runs],
     serverWarmupRequests: options[:server_warmup_requests],
+    environment: environment_metadata,
+    browser:,
     averages: summarize_runs(runs),
+    distributions: summarize_run_distributions(runs),
     samples: runs
   }
 

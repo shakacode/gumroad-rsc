@@ -140,6 +140,8 @@ That validation covers:
 - the `Rspack`-backed Shakapacker development build
 - the standalone `npm run build:rsc-demo` bundle path
 - the targeted dashboard demo controller specs
+- a headless browser smoke spec that visits both `/dashboard/inertia_demo` and `/dashboard/rsc_demo`
+- the React on Rails Pro Node renderer boot path needed for the RSC route
 
 The heavier internal Gumroad matrix still exists for the original codebase shape, but this public repo now has a reviewable CI path that does not depend on the private `ubicloud` runner pool.
 
@@ -154,3 +156,4 @@ The heavier internal Gumroad matrix still exists for the original codebase shape
 The repo is public, the stacked PRs are open, and the React on Rails issue is available as the team-facing discussion hub.
 
 The JSON artifacts linked above are local benchmark outputs, so they are shareable through the repo checkout and branch work, but not through GitHub artifact hosting.
+The measurement script also now records browser/version provenance and percentile-style summary stats in those JSON outputs so the performance-team handoff is less dependent on ad hoc environment notes.

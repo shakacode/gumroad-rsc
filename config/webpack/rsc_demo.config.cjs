@@ -5,7 +5,6 @@ const { RSCWebpackPlugin } = require("react-on-rails-rsc/WebpackPlugin");
 const rootPath = path.resolve(__dirname, "../..");
 const sourcePath = path.join(rootPath, "app/javascript");
 const packsPath = path.join(sourcePath, "packs");
-const publicOutputPath = path.join(rootPath, "public/packs");
 const privateOutputPath = path.join(rootPath, "ssr-generated");
 const buildEnvironment = (() => {
   if (process.env.NODE_ENV) return process.env.NODE_ENV;
@@ -13,6 +12,8 @@ const buildEnvironment = (() => {
   if (process.env.RAILS_ENV === "production" || process.env.RAILS_ENV === "staging") return "production";
   return process.env.RAILS_ENV || "development";
 })();
+const publicOutputDirectory = buildEnvironment === "test" ? "public/packs-test" : "public/packs";
+const publicOutputPath = path.join(rootPath, publicOutputDirectory);
 const mode = buildEnvironment === "production" ? "production" : "development";
 const rscClientReferencesDirectory = path.relative(
   packsPath,
@@ -111,7 +112,7 @@ const clientConfig = {
   output: {
     filename: "[name].js",
     path: publicOutputPath,
-    publicPath: "/packs/",
+    publicPath: buildEnvironment === "test" ? "/packs-test/" : "/packs/",
   },
 };
 
