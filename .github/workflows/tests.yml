@@ -62,16 +62,46 @@ jobs:
       - name: Wait for local services
         run: |
           for port in 3306 6379 27017 9200 9000; do
-            until ruby -rsocket -e "TCPSocket.new('127.0.0.1', ${port}).close"; do
+            echo "Waiting for port ${port}..."
+            for attempt in $(seq 1 90); do
+              if ruby -rsocket -e "TCPSocket.new('127.0.0.1', ${port}).close"; then
+                break
+              fi
               sleep 2
             done
+
+            ruby -rsocket -e "TCPSocket.new('127.0.0.1', ${port}).close" || {
+              echo "Timed out waiting for port ${port}" >&2
+              docker compose -f docker/docker-compose-local.yml ps -a || true
+              exit 1
+            }
           done
 
-          FIXTURE_CID=$(docker compose -f docker/docker-compose-local.yml ps -q copyfixturefiles)
-          until [ "$(docker inspect -f '{{.State.Status}}' "$FIXTURE_CID")" = "exited" ]; do
+          FIXTURE_CID=""
+          for attempt in $(seq 1 60); do
+            FIXTURE_CID=$(docker compose -f docker/docker-compose-local.yml ps -aq copyfixturefiles)
+            [ -n "$FIXTURE_CID" ] && break
             sleep 2
           done
-          test "$(docker inspect -f '{{.State.ExitCode}}' "$FIXTURE_CID")" = "0"
+
+          [ -n "$FIXTURE_CID" ] || {
+            echo "copyfixturefiles container was not created" >&2
+            docker compose -f docker/docker-compose-local.yml ps -a || true
+            exit 1
+          }
+
+          FIXTURE_EXIT_CODE=$(timeout 300 docker wait "$FIXTURE_CID") || {
+            echo "Timed out waiting for copyfixturefiles to finish" >&2
+            docker compose -f docker/docker-compose-local.yml ps -a || true
+            docker logs "$FIXTURE_CID" || true
+            exit 1
+          }
+
+          test "$FIXTURE_EXIT_CODE" = "0" || {
+            echo "copyfixturefiles exited with code $FIXTURE_EXIT_CODE" >&2
+            docker logs "$FIXTURE_CID" || true
+            exit 1
+          }
 
       - name: Prepare test database and seeds
         env:
