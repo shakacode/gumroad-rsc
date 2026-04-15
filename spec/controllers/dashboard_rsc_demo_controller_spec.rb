@@ -36,6 +36,10 @@ describe DashboardRscDemoController, type: :controller do
       expect(assigns(:dashboard_rsc_demo_props).keys).to include(:locale, :seller_display_name, :creator_home)
       expect(assigns(:dashboard_rsc_demo_props)[:seller_display_name]).to eq(seller.name)
       expect(assigns(:dashboard_rsc_demo_props).dig(:creator_home, :balances)).to be_present
+      expect(response.headers["Server-Timing"]).to include("action_total")
+      expect(response.headers["Server-Timing"]).to include("compare_props")
+      expect(response.headers["Server-Timing"]).to include("compare_creator_home")
+      expect(response.headers["Server-Timing"]).to include("render_dispatch")
     end
 
     context "when seller is suspended for TOS" do
@@ -49,10 +53,12 @@ describe DashboardRscDemoController, type: :controller do
         request.env["warden"].session["last_sign_in_at"] = DateTime.current.to_i
       end
 
-      it "redirects to the products_path" do
+      it "redirects to the products_path and still records action timing" do
         get :index
 
         expect(response).to redirect_to products_path
+        expect(response.headers["Server-Timing"]).to include("action_total")
+        expect(response.headers["Server-Timing"]).not_to include("render_dispatch")
       end
     end
   end

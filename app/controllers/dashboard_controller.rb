@@ -3,6 +3,7 @@
 class DashboardController < Sellers::BaseController
   include ActionView::Helpers::NumberHelper, CurrencyHelper
   include DashboardComparisonProps
+  include DashboardComparisonTiming
 
   before_action :check_payment_details, only: [:index, :inertia_demo]
 
@@ -22,14 +23,19 @@ class DashboardController < Sellers::BaseController
   end
 
   def inertia_demo
-    authorize :dashboard, :index?
+    with_dashboard_comparison_timing("action_total") do
+      authorize :dashboard, :index?
 
-    if current_seller.suspended_for_tos_violation?
-      redirect_to products_url
-    else
-      LargeSeller.create_if_warranted(current_seller)
-      @css_pack_name = "dashboard_rsc_demo_styles" unless Rails.env.test?
-      render inertia: "Dashboard/InertiaDemo", props: dashboard_comparison_props
+      if current_seller.suspended_for_tos_violation?
+        redirect_to products_url
+      else
+        with_dashboard_comparison_timing("large_seller") { LargeSeller.create_if_warranted(current_seller) }
+        @css_pack_name = "dashboard_rsc_demo_styles" unless Rails.env.test?
+        comparison_props = dashboard_comparison_props
+        with_dashboard_comparison_timing("render_dispatch") do
+          render inertia: "Dashboard/InertiaDemo", props: comparison_props
+        end
+      end
     end
   end
 

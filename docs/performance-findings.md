@@ -162,13 +162,72 @@ This is promising, but it is still not enough for an upstream migration pitch by
 - The measurements are still local-development measurements, not production-like traces.
 - The browser harness is currently using a mismatched local Chrome and chromedriver pair, which adds noise even though the matched 3-run averages were stable enough to use.
 
+## Server-Timing Follow-up
+
+Date captured: `2026-04-14`
+
+What changed in this pass:
+
+- added route-scoped `Server-Timing` to both `/dashboard/inertia_demo` and `/dashboard/rsc_demo`
+- updated the benchmark harness to record those timings in the JSON summaries
+- re-ran the demo pair on a dedicated local renderer port after finding that port `3800` was occupied by an unrelated renderer process
+
+Important caveat:
+
+- the first 3-run Inertia batch was captured before the RSC batch
+- rerunning the Inertia control after the RSC batch improved the control by about `9-10%`
+- that means cache order matters enough that the stricter comparison is the **post-RSC Inertia rerun** against the RSC batch
+
+Artifacts:
+
+- [instrumented Inertia first-pass JSON](../output/playwright/dashboard-perf/inertia-demo-server-timing-3-dashboard-inertia-demo-metrics.json)
+- [instrumented Inertia post-RSC JSON](../output/playwright/dashboard-perf/inertia-demo-server-timing-3-post-rsc-dashboard-inertia-demo-metrics.json)
+- [instrumented RSC JSON](../output/playwright/dashboard-perf/rsc-demo-server-timing-3-dashboard-rsc-demo-metrics.json)
+
+### Browser metrics against the warmer control
+
+| Metric                 |   Inertia demo |       RSC demo |    Delta |
+| ---------------------- | -------------: | -------------: | -------: |
+| Navigation duration    |     `585.03ms` |     `461.97ms` | `-21.0%` |
+| Response end           |     `433.43ms` |     `396.50ms` |  `-8.5%` |
+| LCP                    |     `610.67ms` |     `484.00ms` | `-20.7%` |
+| HTML response transfer | `14,244` bytes | `15,265` bytes |  `+7.2%` |
+| JS request count       |            `6` |            `1` | `-83.3%` |
+
+### Route-scoped server metrics against the warmer control
+
+| Metric                       | Inertia demo |   RSC demo |    Delta |
+| ---------------------------- | -----------: | ---------: | -------: |
+| Controller `action_total`    |   `253.73ms` | `229.94ms` |  `-9.4%` |
+| Presenter `compare_props`    |   `225.14ms` | `194.60ms` | `-13.6%` |
+| Presenter `compare_creator_home` | `206.88ms` | `181.21ms` | `-12.4%` |
+| `sql.active_record`          |    `99.53ms` |  `84.58ms` | `-15.0%` |
+| `render_dispatch`            |    `24.84ms` |  `23.30ms` |  `-6.2%` |
+
+## Interpretation Of The Server-Timing Follow-up
+
+This is the strongest local result so far, but it needs careful wording.
+
+- The earlier matched result already showed a user-visible win on navigation duration and `LCP`.
+- The new instrumented pass shows that, on this local setup, the `RSC` route also stays ahead on `responseEnd` even against a more-warmed Inertia rerun.
+- The route-scoped timings suggest the RSC route is not merely shifting time around in the browser; it is also doing less app-side work in the controller/presenter path on this reduced surface.
+- The first Inertia batch overstated the gap because measurement order changed cache warmth, which is exactly why this follow-up is more credible than the raw first-pass numbers.
+
+The right conclusion is not "RSC is now proven faster everywhere."
+
+The right conclusion is:
+
+- the current local evidence is now favorable on both browser and route-level server timings
+- the signal is strong enough to justify deeper profiling and production-like measurement
+- the next step is validation and explanation, not broader migration claims yet
+
 ## What This Means For Positioning
 
 Today’s credible story is:
 
 - `Shakapacker + Rspack` can deliver immediate build and dev-loop wins for a real Inertia app.
 - `React 19 + Rspack` is technically viable here.
-- `React on Rails Pro + RSC` now has early matched-surface evidence of a user-visible win on `LCP` and total navigation time.
+- `React on Rails Pro + RSC` now has matched-surface evidence of a user-visible win, and the latest local instrumented pass also points to a route-level server-side win.
 
 Today’s non-credible story is:
 
@@ -179,6 +238,7 @@ The next demo only helps if the matched `React on Rails Pro + RSC` implementatio
 
 - equal or better LCP
 - equal or better total navigation duration
+- ideally equal or better response end once the measurement setup is controlled well enough
 - fewer client-side requests or bytes for the page
 - with server-response costs that are understandable and defensible
 
@@ -191,6 +251,6 @@ Keep the branches and claims narrow:
 1. Keep `jg-codex/react19-rspack` focused on bundler viability and build-speed wins.
 2. Treat React 19 type cleanup as a separate stacked branch if needed.
 3. Keep the matched `/dashboard/inertia_demo` and `/dashboard/rsc_demo` pair as the primary performance comparison surface.
-4. Optimize the RSC route specifically on server response cost and renderer overhead without giving back the LCP win.
-5. Re-run the same comparison after fixing the local Chrome and chromedriver mismatch so the numbers are less noisy.
+4. Re-run the same comparison after fixing the local Chrome and chromedriver mismatch so the numbers are less noisy.
+5. Repeat the instrumented comparison in a production-like renderer mode before broadening the pitch.
 6. Do not file upstream issues or pitch upstream adoption on runtime-performance grounds until the matched comparison stays favorable after that cleanup.

@@ -28,43 +28,61 @@ What is already true:
 
 - the RSC route wins on total navigation duration
 - the RSC route wins on `LCP`
-- the RSC route reduces page-specific JS requests from `5` to `1`
+- the latest instrumented local pass also has the RSC route ahead on `responseEnd`
+- the RSC route reduces page-specific JS requests from `6` to `1` in the latest instrumented local pass
 - the demo JS and CSS are route-scoped, so unrelated pages are not paying for the experiment
 - the raw RSC HTML transfer is now close to the Inertia control after the response-end pass
+- route-scoped `Server-Timing` now shows the RSC route doing less controller, presenter, and SQL work on this reduced surface
 
-What is still true:
+What is not yet proven:
 
-- the Inertia control still wins on `responseEnd`
-- that remaining gap persisted even after most of the raw transfer-size gap was removed
-- that suggests the remaining cost is more likely renderer or streaming overhead than simple HTML bloat
+- the strongest result is still a local-development measurement
+- the benchmark harness is still using a mismatched local Chrome and chromedriver pair
+- measurement order affects cache state, so single batch results can overstate the gap
 
-## Current matched result
+## Latest instrumented local result
 
 Measured with:
 
 - one explicit server warmup request
 - local Docker-backed services
 - local logged-in seller
-- standalone React on Rails Pro Node renderer running
+- standalone React on Rails Pro Node renderer running on a dedicated port for this pass
 
-### Main local comparison
+### Browser metrics
+
+This is the stricter comparison to use from this pass:
+
+- RSC 3-run batch
+- compared against an Inertia rerun captured **after** the RSC batch, so the control had the benefit of the warmer cache state
 
 | Metric                 |   Inertia demo |       RSC demo |    Delta |
 | ---------------------- | -------------: | -------------: | -------: |
-| Navigation duration    |     `492.03ms` |     `429.90ms` | `-12.6%` |
-| Response end           |     `344.90ms` |     `371.20ms` |  `+7.6%` |
-| LCP                    |     `496.00ms` |     `452.00ms` |  `-8.9%` |
-| HTML response transfer | `14,401` bytes | `15,444` bytes |  `+7.2%` |
-| JS request count       |            `5` |            `1` | `-80.0%` |
+| Navigation duration    |     `585.03ms` |     `461.97ms` | `-21.0%` |
+| Response end           |     `433.43ms` |     `396.50ms` |  `-8.5%` |
+| LCP                    |     `610.67ms` |     `484.00ms` | `-20.7%` |
+| HTML response transfer | `14,244` bytes | `15,265` bytes |  `+7.2%` |
+| JS request count       |            `6` |            `1` | `-83.3%` |
 
-### Raw response reduction achieved during this pass
+### Route-scoped server timings
+
+| Metric                  | Inertia demo |   RSC demo |    Delta |
+| ----------------------- | -----------: | ---------: | -------: |
+| Controller `action_total` |   `253.73ms` | `229.94ms` |  `-9.4%` |
+| Presenter `compare_props` |   `225.14ms` | `194.60ms` | `-13.6%` |
+| Presenter `compare_creator_home` | `206.88ms` | `181.21ms` | `-12.4%` |
+| `sql.active_record`     |    `99.53ms` |  `84.58ms` | `-15.0%` |
+| `render_dispatch`       |    `24.84ms` |  `23.30ms` |  `-6.2%` |
+
+### Raw response reduction achieved earlier in the pass
 
 The response-end pass reduced the RSC route from roughly:
 
 - raw response: `36.9KB` -> `15.1KB`
 - inline RSC script: `25.4KB` -> `8.9KB`
 
-That means the remaining `responseEnd` penalty is not explained by raw response size alone.
+That means the current local advantage is not coming from a smaller HTML transfer alone.
+The new `Server-Timing` data points to lower controller and presenter work on the RSC route as well.
 
 ## How optimized is the current RSC implementation?
 
@@ -101,6 +119,7 @@ Today the implementation mostly proves:
 - you can move a read-heavy slice out of a large client-rendered Inertia payload
 - you can reduce page-specific client JS materially
 - you can win on user-visible metrics on a bounded surface
+- you can now inspect route-scoped server work instead of arguing only from browser timings
 
 It does **not** yet prove the full upside of RSC as an architecture.
 
@@ -108,11 +127,11 @@ It does **not** yet prove the full upside of RSC as an architecture.
 
 If the performance team wants the next round to be high signal, focus here:
 
-1. Instrument the React on Rails Pro renderer and streaming path.
-   We need to know where the remaining `responseEnd` cost lives.
+1. Re-run the comparison in a production-like mode with a dedicated renderer and a fixed Chrome/chromedriver pair.
+   The latest result is strong, but it is still local-development and cache-order sensitive.
 
-2. Compare development-mode results against production-like runs.
-   Current measurements are local-development runs.
+2. Instrument the React on Rails Pro renderer and streaming path.
+   We now have route-scoped Rails timing, but not renderer-internal timing.
 
 3. Test whether finer-grained Suspense boundaries improve time-to-first-meaningful HTML without regressing final paint.
 
@@ -150,6 +169,8 @@ The heavier internal Gumroad matrix still exists for the original codebase shape
 - [matched comparison JSON](../output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json)
 - [Inertia metrics JSON](../output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json)
 - [RSC metrics JSON](../output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json)
+- [Instrumented Inertia rerun JSON](../output/playwright/dashboard-perf/inertia-demo-server-timing-3-post-rsc-dashboard-inertia-demo-metrics.json)
+- [Instrumented RSC JSON](../output/playwright/dashboard-perf/rsc-demo-server-timing-3-dashboard-rsc-demo-metrics.json)
 
 ## Current sharing status
 
@@ -157,3 +178,4 @@ The repo is public, the stacked PRs are open, and the React on Rails issue is av
 
 The JSON artifacts linked above are local benchmark outputs, so they are shareable through the repo checkout and branch work, but not through GitHub artifact hosting.
 The measurement script also now records browser/version provenance and percentile-style summary stats in those JSON outputs so the performance-team handoff is less dependent on ad hoc environment notes.
+A first instrumented Inertia batch captured before the RSC batch was about `9-10%` slower than the Inertia rerun listed above, which is why the stricter comparison in this doc uses the later control run.
