@@ -108,6 +108,12 @@ This repo should also help answer whether Shakapacker plus Rspack can be positio
 - a credible alternative for teams that want more control than Vite defaults
 - a bundling story that works for both Inertia and React on Rails users
 
+But the message has to stay disciplined:
+
+- `Rspack` is a build-speed and iteration-speed story
+- `RSC` is the story that might justify added runtime complexity on the page
+- mixing those two claims weakens both
+
 ## IP and Product Guardrails
 
 ### Public vs proprietary
@@ -159,4 +165,6 @@ For now, the best path is:
 - build the comparison honestly
 - document where Inertia wins
 - document where React on Rails Pro wins
+- treat the current Inertia plus Rspack branch as enabling infrastructure, not the runtime pitch
+- require the first React on Rails Pro plus RSC demo to beat the Inertia baseline on JS and at least one load metric
 - only then decide whether the next move is docs, a public integration, a private product feature, or an upstream proposal

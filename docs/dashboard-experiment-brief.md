@@ -68,6 +68,12 @@ That means the likely React 19/RSC comparison seam is not "replace everything." 
 - move read-heavy or data-assembly-heavy sections toward server-rendered React boundaries
 - compare whether that split is clearer or lighter than the current presenter-plus-Inertia-props model
 
+This is also why the current `Rspack` branch should not be treated as the runtime test.
+
+- `Rspack` is the tooling and developer-experience upgrade.
+- `RSC` is the page-runtime hypothesis.
+- The route metrics we just captured are the baseline that the `RSC` branch must beat.
+
 ## Most likely comparison seams
 
 ### High-confidence seams
@@ -82,6 +88,21 @@ That means the likely React 19/RSC comparison seam is not "replace everything." 
 - stats cards
 
 These are already simple and may not benefit enough to matter.
+
+## Proposed first RSC cut
+
+Keep the first demo narrow and bias toward read-heavy sections:
+
+- render the overall dashboard route through React on Rails Pro
+- keep the page shell and any dismiss/minimize interactions as client components
+- move the best-selling products table into a server component
+- move the activity feed into a server component
+- test whether the tax-form and verification sections are better as server-rendered React fragments rather than Inertia payload
+
+The core comparison should be:
+
+- current Inertia page ships one large `creator_home` prop into the client
+- RSC version keeps more of that assembly and rendering on the server and ships only the client code that still needs to be interactive
 
 ## Current behavior worth preserving
 
@@ -147,6 +168,56 @@ This should happen before adding the separate React on Rails Pro surface, becaus
 
 If that branch stays low-risk, it becomes a much easier review story than opening with a React on Rails migration pitch.
 
+## Current branch result
+
+That first branch is now partially proven locally:
+
+- `shakapacker` is upgraded to `10.0.0`
+- React and React DOM are upgraded to `19.2.5`
+- the app builds successfully with Rspack in both development and production
+- the Rspack dev server boots successfully
+- the dashboard controller and presenter spec slice still passes
+
+The branch also surfaced two concrete adoption costs:
+
+- the repo's old `react-dom@18.3.1` patch is obsolete and had to be removed because React 19 already includes `inert`
+- `npx tsc --noEmit` now reports broad React 19 type fallout across the app
+
+That means the positioning story is already stronger:
+
+- Rspack migration looks technically viable for Gumroad's current Inertia app
+- React 19 support is not a free upgrade here and may need its own cleanup branch before it is easy to upstream
+
+This is useful evidence, not a setback, because it tells us where the real review cost sits.
+
+## Measured dashboard baseline
+
+The first route-level comparison is now captured in [performance-findings.md](./performance-findings.md).
+
+The explicit success bar for the next branch is documented in [rsc-benchmark-plan.md](./rsc-benchmark-plan.md).
+
+What matters:
+
+- developer build time improved substantially under Rspack
+- the bundler branch did not produce a route-level win, which is expected
+- dashboard JS transfer grew materially under the current branch
+
+That changes the standard for the next demo:
+
+- it is not enough to show that React on Rails Pro or RSC is possible
+- it has to beat the current Inertia baseline on page-level metrics that justify extra complexity
+
+For this target, the most important metrics to beat are:
+
+- dashboard JS transferred
+- dashboard LCP
+- total dashboard navigation duration
+
+The right reading of the current numbers is:
+
+- they establish the baseline for the `RSC` branch
+- they do not tell us whether `RSC` can win yet
+
 ## Success condition for this target
 
 The `Dashboard` experiment is a success only if it can show a narrow, credible win such as:
@@ -155,5 +226,11 @@ The `Dashboard` experiment is a success only if it can show a narrow, credible w
 - smaller or more deferrable client payload for the page
 - better perceived loading behavior
 - a meaningfully better development model for evolving the page
+
+For positioning purposes, the strongest version of that success is:
+
+- materially less dashboard JS
+- equal or better LCP
+- no meaningful regression in total navigation duration
 
 If it cannot do that, the right conclusion is that `Dashboard` should stay on the current Inertia shape and the positioning lesson should be captured honestly.

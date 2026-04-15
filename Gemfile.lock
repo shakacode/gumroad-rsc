@@ -315,7 +315,7 @@ GEM
       epub-cfi
       rchardet (>= 1.6.1)
       rexml
-    erb (6.0.1)
+    erb (6.0.2)
     erubi (1.13.1)
     et-orbi (1.2.11)
       tzinfo
@@ -466,8 +466,9 @@ GEM
       railties (>= 6)
     io-console (0.8.2)
     io-like (0.3.1)
-    irb (1.16.0)
+    irb (1.17.0)
       pp (>= 0.6.0)
+      prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     jbuilder (2.12.0)
@@ -642,7 +643,7 @@ GEM
     orm_adapter (0.5.0)
     os (1.1.4)
     ostruct (0.6.1)
-    package_json (0.1.0)
+    package_json (0.2.0)
     pagy (9.0.5)
     paper_trail (15.1.0)
       activerecord (>= 6.1)
@@ -714,7 +715,7 @@ GEM
     pwned (2.4.1)
     raabro (1.4.0)
     racc (1.8.1)
-    rack (3.2.5)
+    rack (3.2.6)
     rack-attack (6.7.0)
       rack (>= 1.0, < 4)
     rack-cors (2.0.2)
@@ -732,7 +733,7 @@ GEM
       rack (>= 3.0.0, < 4)
     rack-proxy (0.7.7)
       rack
-    rack-session (2.1.1)
+    rack-session (2.1.2)
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
     rack-ssl (1.4.1)
@@ -766,8 +767,8 @@ GEM
       activesupport (>= 5.0.0)
       minitest
       nokogiri (>= 1.6)
-    rails-html-sanitizer (1.6.2)
-      loofah (~> 2.21)
+    rails-html-sanitizer (1.7.0)
+      loofah (~> 2.25)
       nokogiri (>= 1.15.7, != 1.16.7, != 1.16.6, != 1.16.5, != 1.16.4, != 1.16.3, != 1.16.2, != 1.16.1, != 1.16.0.rc1, != 1.16.0)
     railties (7.1.6)
       actionpack (= 7.1.6)
@@ -785,7 +786,7 @@ GEM
       redis (>= 3.0.0)
       redis-namespace (>= 1.0.0)
     rchardet (1.8.0)
-    rdoc (7.0.2)
+    rdoc (7.2.0)
       erb
       psych (>= 4.0.0)
       tsort
@@ -936,7 +937,7 @@ GEM
       rexml (~> 3.2, >= 3.2.5)
       rubyzip (>= 1.2.2, < 4.0)
       websocket (~> 1.0)
-    semantic_range (3.0.0)
+    semantic_range (3.1.1)
     sendgrid-ruby (6.7.0)
       ruby_http_client (~> 3.4)
     sentry-rails (6.5.0)
@@ -946,7 +947,7 @@ GEM
       bigdecimal
       concurrent-ruby (~> 1.0, >= 1.0.2)
       logger
-    shakapacker (8.0.1)
+    shakapacker (10.0.0)
       activesupport (>= 5.2)
       package_json
       rack-proxy (>= 0.6.1)
@@ -1024,7 +1025,7 @@ GEM
       model_attribute (~> 3.2)
     terser (1.2.3)
       execjs (>= 0.3.0, < 3)
-    thor (1.4.0)
+    thor (1.5.0)
     thread_safe (0.3.6)
     tilt (2.4.0)
     timeout (0.4.4)
@@ -1080,7 +1081,7 @@ GEM
       rexml
     xpath (3.2.0)
       nokogiri (~> 1.8)
-    zeitwerk (2.7.4)
+    zeitwerk (2.7.5)
     zip-zip (0.3)
       rubyzip (>= 1.0.0)
 
@@ -1235,7 +1236,7 @@ DEPENDENCIES
   sendgrid-ruby (~> 6.6)
   sentry-rails
   sentry-ruby
-  shakapacker (~> 8.0)
+  shakapacker (~> 10.0)
   shoulda-matchers (~> 6.0)
   sidekiq (~> 7.2)
   sidekiq-cron (~> 1.9)

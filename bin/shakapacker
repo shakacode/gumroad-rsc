@@ -5,7 +5,7 @@ ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../../Gemfile", __FILE__)
 
 require "bundler/setup"
 require "shakapacker"
-require "shakapacker/webpack_runner"
+require "shakapacker/runner"
 
 require_relative "../config/domain"
 ENV["ROOT_DOMAIN"] = ROOT_DOMAIN
@@ -15,5 +15,5 @@ ENV["PROTOCOL"] = PROTOCOL
 
 APP_ROOT = File.expand_path("..", __dir__)
 Dir.chdir(APP_ROOT) do
-  Shakapacker::WebpackRunner.run(ARGV)
+  Shakapacker::Runner.run(ARGV)
 end
