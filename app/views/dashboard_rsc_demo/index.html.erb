@@ -1,5 +1,6 @@
 <% content_for :script do %>
-  <%= javascript_include_tag "/packs/dashboard_rsc_demo.js", defer: true, crossorigin: "anonymous" %>
+  <% rsc_demo_asset_path = Rails.env.test? ? "/packs-test/dashboard_rsc_demo.js" : "/packs/dashboard_rsc_demo.js" %>
+  <%= javascript_include_tag rsc_demo_asset_path, defer: true, crossorigin: "anonymous" %>
 <% end %>
 <%= stream_react_component(
   "DashboardRscDemoPage",

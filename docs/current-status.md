@@ -28,6 +28,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - Selected `Dashboard` as the first comparison surface
 - Documented the first implementation-facing brief in [dashboard-experiment-brief.md](./dashboard-experiment-brief.md)
 - Documented measured results in [performance-findings.md](./performance-findings.md)
+- Added a browser-level smoke spec that renders both `/dashboard/inertia_demo` and `/dashboard/rsc_demo` through a real headless browser in CI
 - Installed Ruby gems locally
 - Installed `node_modules` locally
 - Brought up the Docker-backed local services
@@ -51,6 +52,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - Added explicit development host allowlisting for the local Gumroad domains so the benchmark/login flow works again on `gumroad.dev:3000`
 - Captured successful browser measurements for the matched Inertia and RSC demo routes
 - Manually verified both demo routes in a signed-in browser session and captured comparison screenshots in `docs/images/`
+- Fixed the standalone RSC demo test-build path so `RAILS_ENV=test` writes the client manifest and browser bundle to `public/packs-test`, which made browser-level CI validation of the RSC route possible
 - Reduced the raw RSC comparison response from about `36.9KB` to about `15.1KB` by trimming server markup, compacting demo props, and rebuilding the dedicated RSC bundles
 - Re-ran `spec/presenters/product_presenter/product_props_spec.rb` after seeding merchant accounts in test: `26 examples, 0 failures`
 - Re-ran `spec/presenters/creator_home_presenter_spec.rb`: `22 examples, 0 failures`
@@ -185,6 +187,7 @@ Recommended order:
 3. Treat `/dashboard/inertia_demo` as the primary Inertia control, not the full dashboard.
 4. Keep `/dashboard/rsc_demo`, but treat the remaining `responseEnd` gap as renderer or streaming overhead, not just raw HTML weight.
 5. Keep CI honest with the GitHub-hosted demo validation workflow for this public repo: it validates the Rspack build, the targeted demo controller specs, and the standalone `npm run build:rsc-demo` path.
+   It now also boots the Node renderer and runs a headless browser smoke spec for both demo routes.
 6. Re-run the matched comparison after fixing the local Chrome and chromedriver mismatch.
 7. Only then decide whether a deeper migration story is warranted.
 

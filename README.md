@@ -41,6 +41,7 @@ The goal is not to argue that every Inertia page should be replaced. The goal is
 - The demo assets are route-scoped, so ordinary Inertia pages do not pay for the experiment's extra JS or CSS.
 - A bounded `React on Rails Pro + RSC` dashboard slice can beat a matched `Inertia` control on `LCP` and total navigation duration.
 - The current tradeoff is still real: the matched `RSC` route is modestly slower on server `responseEnd`.
+- GitHub-hosted demo validation now includes a real browser smoke pass for both comparison routes, not just build and controller-spec checks.
 
 Current matched local result on the reduced dashboard surface:
 
