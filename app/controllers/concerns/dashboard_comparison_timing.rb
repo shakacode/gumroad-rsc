@@ -10,10 +10,10 @@ module DashboardComparisonTiming
   private
     def with_dashboard_comparison_timing(metric_name)
       started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      result = yield
+      yield
+    ensure
       duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round(2)
       dashboard_comparison_timing_metrics << { name: metric_name, duration_ms: }
-      result
     end
 
     def dashboard_comparison_timing_metrics
