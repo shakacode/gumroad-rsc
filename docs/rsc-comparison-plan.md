@@ -67,14 +67,16 @@ The experiment fails if the React on Rails Pro path mostly adds complexity witho
 
 ## Recommended First Target
 
-Start by evaluating `Products/Edit` versus a more data-heavy read surface such as `Dashboard`, then choose one.
+The first target has now been selected: `Dashboard`.
+
+Start with `Dashboard`, then revisit `Products/Edit` later if we want a second comparison focused on client-heavy editing workflows.
 
 Reasoning:
 
 - `Products/Edit` is the strongest test of complex client-side React workflows.
 - `Dashboard` is the stronger test for streaming, server/client composition, and RSC-style data boundaries.
 
-If we want to prove React 19 and RSC specifically, `Dashboard` may produce a cleaner argument. If we want to prove React-heavy UI ergonomics, `Products/Edit` is the better test.
+Because this repository is explicitly centered on React 19 and RSC, `Dashboard` is the better first proof target.
 
 ## Branch Strategy
 
