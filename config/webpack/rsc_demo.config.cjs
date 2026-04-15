@@ -7,8 +7,13 @@ const sourcePath = path.join(rootPath, "app/javascript");
 const packsPath = path.join(sourcePath, "packs");
 const publicOutputPath = path.join(rootPath, "public/packs");
 const privateOutputPath = path.join(rootPath, "ssr-generated");
-const nodeEnv = process.env.NODE_ENV || process.env.RAILS_ENV || "development";
-const mode = nodeEnv === "production" ? "production" : "development";
+const buildEnvironment = (() => {
+  if (process.env.NODE_ENV) return process.env.NODE_ENV;
+  if (process.env.RAILS_ENV === "test") return "test";
+  if (process.env.RAILS_ENV === "production" || process.env.RAILS_ENV === "staging") return "production";
+  return process.env.RAILS_ENV || "development";
+})();
+const mode = buildEnvironment === "production" ? "production" : "development";
 const rscClientReferencesDirectory = path.relative(
   packsPath,
   path.join(sourcePath, "src/dashboard_rsc_demo/ror_components"),

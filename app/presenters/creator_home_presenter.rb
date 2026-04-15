@@ -122,7 +122,7 @@ class CreatorHomePresenter
     def stripe_verification_message
       return unless seller.stripe_account.present?
 
-      seller.user_compliance_info_requests.requested.filter_map(&:verification_error_message).last
+      seller.user_compliance_info_requests.requested.filter_map { |request| request.verification_error_message.presence }.last
     end
 
     def tax_forms_data
