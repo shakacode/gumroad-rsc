@@ -53,10 +53,12 @@ describe DashboardRscDemoController, type: :controller do
         request.env["warden"].session["last_sign_in_at"] = DateTime.current.to_i
       end
 
-      it "redirects to the products_path" do
+      it "redirects to the products_path and still records action timing" do
         get :index
 
         expect(response).to redirect_to products_path
+        expect(response.headers["Server-Timing"]).to include("action_total")
+        expect(response.headers["Server-Timing"]).not_to include("render_dispatch")
       end
     end
   end
