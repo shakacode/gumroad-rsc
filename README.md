@@ -14,11 +14,26 @@
   <a href="https://gumroad.com">Gumroad</a> is an e-commerce platform that enables creators to sell products directly to consumers. This repository contains the source code for the Gumroad web application.
 </p>
 
-## Experiment Repo
+> [!IMPORTANT]
+> This is not Gumroad's canonical repository. It is a public ShakaCode experiment seeded from [`antiwork/gumroad`](https://github.com/antiwork/gumroad) to answer three questions:
+>
+> 1. Can this codebase move cleanly from Webpack to `Shakapacker + Rspack`?
+> 2. What real React 19 adoption fallout appears on a non-trivial Rails app?
+> 3. Can a bounded `React on Rails Pro + RSC` slice beat a matched `Inertia` control enough to justify the extra complexity?
+
+## Public Experiment Repo
 
 This repository tracks [antiwork/gumroad](https://github.com/antiwork/gumroad) and is being used by ShakaCode as a focused experiment for comparing the current Inertia-based implementation against a React on Rails Pro + React 19 + RSC implementation on carefully chosen surfaces.
 
 The goal is not to argue that every Inertia page should be replaced. The goal is to determine whether a narrower set of pages can benefit enough from React 19, React on Rails Pro, and React Server Components to justify a deeper proposal later.
+
+### Start here
+
+- [docs/current-status.md](docs/current-status.md)
+- [docs/performance-team-handoff.md](docs/performance-team-handoff.md)
+- [docs/performance-findings.md](docs/performance-findings.md)
+- [React on Rails issue #3128](https://github.com/shakacode/react_on_rails/issues/3128)
+- [PR stack: baseline](https://github.com/shakacode/gumroad-rsc/pull/1), [React 19 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2), [React on Rails Pro + RSC](https://github.com/shakacode/gumroad-rsc/pull/3)
 
 ### What this repo currently proves
 
