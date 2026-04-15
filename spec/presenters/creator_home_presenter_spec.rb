@@ -378,4 +378,75 @@ describe CreatorHomePresenter do
       end
     end
   end
+
+  describe "#creator_home_rsc_demo_props" do
+    before do
+      allow_any_instance_of(UserBalanceStatsService).to receive(:fetch).and_return(
+        {
+          overview: {
+            balance: 10_000,
+            last_seven_days_sales_total: 5_000,
+            last_28_days_sales_total: 15_000,
+            sales_cents_total: 50_000
+          },
+        }
+      )
+    end
+
+    it "omits empty optional demo fields" do
+      expect(presenter.creator_home_rsc_demo_props).to eq(
+        balances: {
+          balance: "$100",
+          last_seven_days_sales_total: "$50",
+          last_28_days_sales_total: "$150",
+          total: "$500",
+        }
+      )
+    end
+
+    it "keeps non-empty optional demo fields" do
+      sale = {
+        "id" => "demo-product",
+        "name" => "Demo product",
+        "sales" => 2,
+        "revenue" => 400,
+        "visits" => 20,
+        "today" => 100,
+        "last_7" => 400,
+        "last_30" => 400,
+      }
+      activity_item = {
+        "type" => "new_sale",
+        "timestamp" => "2022-05-16T22:00:00Z",
+        "details" => {
+          "price_cents" => 400,
+          "product_name" => "Demo product",
+          "product_unique_permalink" => "demo-product",
+        }
+      }
+
+      allow(presenter).to receive(:demo_sales).and_return([sale])
+      allow(presenter).to receive(:demo_activity_items).and_return([activity_item])
+      allow(presenter).to receive(:stripe_verification_message).and_return("Update your Stripe details")
+      allow(presenter).to receive(:tax_forms_data).and_return(
+        show_1099_download_notice: true,
+        tax_center_enabled: true,
+        tax_forms: []
+      )
+
+      expect(presenter.creator_home_rsc_demo_props).to include(
+        balances: {
+          balance: "$100",
+          last_seven_days_sales_total: "$50",
+          last_28_days_sales_total: "$150",
+          total: "$500",
+        },
+        sales: [sale],
+        activity_items: [activity_item],
+        stripe_verification_message: "Update your Stripe details",
+        show_1099_download_notice: true,
+        tax_center_enabled: true
+      )
+    end
+  end
 end

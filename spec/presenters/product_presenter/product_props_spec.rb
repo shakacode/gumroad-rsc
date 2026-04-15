@@ -578,6 +578,18 @@ describe ProductPresenter::ProductProps do
       expect($redis.hgetall(metrics_key)).to eq("misses" => "2", "hits" => "2")
     end
 
+    it "handles cache read notifications with array keys" do
+      metrics_key = described_class::SALES_COUNT_CACHE_METRICS_KEY
+      cache_key = "#{described_class::SALES_COUNT_CACHE_KEY_REFIX}:demo"
+      $redis.del(metrics_key)
+
+      expect do
+        ActiveSupport::Notifications.instrument("cache_read.active_support", key: [cache_key], hit: true)
+      end.not_to raise_error
+
+      expect($redis.hgetall(metrics_key)).to eq("hits" => "1")
+    end
+
     it "includes free downloads in the sales_count for products with paid variants", :sidekiq_inline, :elasticsearch_wait_for_refresh do
       product = create(:product, user: seller, should_show_sales_count: true, price_cents: 0)
       presenter = described_class.new(product:)

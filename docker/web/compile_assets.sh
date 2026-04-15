@@ -22,6 +22,7 @@ export PUPPETEER_SKIP_DOWNLOAD="true"
 npm install
 
 npm run setup
+npm run build:rsc-demo
 
 bundle exec rake assets:precompile
 

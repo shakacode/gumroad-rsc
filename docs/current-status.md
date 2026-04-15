@@ -2,9 +2,19 @@
 
 ## Short answer
 
-No, the demo is not ready yet.
+The demo pair is implemented, measurable, and now useful for positioning.
 
-This repository has moved past pure planning and through the first implementation branch for the current Inertia stack.
+It is **not** ready for an upstream pitch yet, but it is no longer just a compile-and-run experiment.
+
+This repository has moved past pure planning, through the Rspack migration branch, and into a matched Inertia-versus-React on Rails Pro comparison surface.
+
+## Shareable references
+
+- repo: [shakacode/gumroad-rsc](https://github.com/shakacode/gumroad-rsc)
+- stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/gumroad-rsc/pull/1)
+- stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2)
+- stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/gumroad-rsc/pull/3)
+- React on Rails issue: [react_on_rails#3128](https://github.com/shakacode/react_on_rails/issues/3128)
 
 ## What is already done
 
@@ -14,6 +24,7 @@ This repository has moved past pure planning and through the first implementatio
 - Documented the comparison plan in [rsc-comparison-plan.md](./rsc-comparison-plan.md)
 - Documented the runtime pass/fail rubric in [rsc-benchmark-plan.md](./rsc-benchmark-plan.md)
 - Documented positioning, adjacent ideas, and IP guardrails in [positioning-notes.md](./positioning-notes.md)
+- Added a single performance handoff doc for review circulation in [performance-team-handoff.md](./performance-team-handoff.md)
 - Selected `Dashboard` as the first comparison surface
 - Documented the first implementation-facing brief in [dashboard-experiment-brief.md](./dashboard-experiment-brief.md)
 - Documented measured results in [performance-findings.md](./performance-findings.md)
@@ -28,39 +39,56 @@ This repository has moved past pure planning and through the first implementatio
 - Confirmed `bin/shakapacker` builds successfully in both development and production with Rspack
 - Confirmed `bin/shakapacker-dev-server` boots successfully on `https://gumroad.dev:3035/`
 - Removed an obsolete `patch-package` patch for `react-dom@18.3.1` because React 19 already includes the needed `inert` support
+- Added React on Rails Pro and the Node renderer configuration locally
+- Added a dedicated `/dashboard/rsc_demo` route backed by the existing `CreatorHomePresenter`
+- Added a matching `/dashboard/inertia_demo` route using the same reduced seller-data surface
+- Built a bounded React on Rails Pro plus RSC dashboard surface that reuses real seller data
+- Built a matched Inertia control surface that shares the same reduced UI intent
+- Isolated the RSC route from the main Inertia `base` pack so the comparison surface is actually separate
+- Kept the demo-only JS and CSS route-scoped so non-demo pages do not download the comparison assets
+- Wired React on Rails nonce handling into Gumroad's `SecureHeaders` setup so streamed inline RSC payload scripts are allowed under CSP
+- Regenerated `js-routes` so the comparison routes are available to both the Inertia and RSC demo code
+- Added explicit development host allowlisting for the local Gumroad domains so the benchmark/login flow works again on `gumroad.dev:3000`
+- Captured successful browser measurements for the matched Inertia and RSC demo routes
+- Manually verified both demo routes in a signed-in browser session and captured comparison screenshots in `docs/images/`
+- Reduced the raw RSC comparison response from about `36.9KB` to about `15.1KB` by trimming server markup, compacting demo props, and rebuilding the dedicated RSC bundles
+- Re-ran `spec/presenters/product_presenter/product_props_spec.rb` after seeding merchant accounts in test: `26 examples, 0 failures`
+- Re-ran `spec/presenters/creator_home_presenter_spec.rb`: `22 examples, 0 failures`
 
 ## What is not done yet
 
-- no React on Rails Pro integration has been added
-- no React on Rails Pro demo branch has been implemented yet
-- no RSC proof of concept has been implemented yet
 - the React 19 type fallout has not been cleaned up yet across the app
+- the broad React 19 cleanup still needs its own reviewable branch strategy
+- the full current `/dashboard` route is still too noisy for a fair RSC-versus-Inertia story
+- the matched RSC route still has a slightly slower warmed server `responseEnd` than the matched Inertia control
+- the demo has not yet been reduced to a compelling upstream-review story
 
 ## What "demo ready" means
 
-The demo should not be considered ready until it can show all of the following:
+The demo should not be considered upstream-ready until it can show all of the following:
 
 - one clearly chosen page or flow
-- the current Inertia implementation running as the baseline
+- a matched Inertia implementation running as the control
 - a bounded React on Rails Pro implementation of the same surface
 - enough React 19 or RSC usage to make the comparison meaningful
-- measurements or at least disciplined observations for bundle size, loading behavior, and developer tradeoffs
+- disciplined measurements for loading behavior and developer tradeoffs
 - a short written conclusion that says where Inertia wins and where React on Rails Pro wins
 
 ## Measured findings
 
-The first dashboard measurements now exist.
+The warmed matched comparison measurements now exist.
 
 Short version:
 
 - Rspack is a strong developer-performance win here
 - no route-level runtime win was expected from the bundler swap by itself
-- the current dashboard JS transfer is materially larger
-- the real runtime question is still open until a separate React on Rails Pro plus RSC branch exists
+- the warmed matched `RSC` demo beats the warmed matched `Inertia` control on total navigation duration and `LCP`
+- the warmed matched `Inertia` control still has the smaller server `responseEnd`
+- the response-end pass materially reduced the raw RSC payload, but it did not eliminate the remaining server-response penalty
 
-That means the demo is still not ready.
+That means the demo is now real, and there is an early performance story, but it is still a mixed tradeoff rather than a clean universal win.
 
-The missing piece is no longer "can this compile?" The missing piece is "can a follow-up React on Rails Pro plus RSC surface beat the current Inertia baseline on real route metrics?"
+The missing piece is no longer "can this compile?" The missing piece is "can the next RSC pass keep the LCP and navigation win while making the remaining server-response cost small enough to feel clearly worth it?"
 
 The benchmark rubric for that decision now lives in [rsc-benchmark-plan.md](./rsc-benchmark-plan.md).
 
@@ -74,6 +102,7 @@ Current local state:
 - gems are installed
 - Rails boots locally on port `3000`
 - the Rspack-backed Shakapacker dev server boots locally on port `3035`
+- `bin/dev` now boots the standalone React on Rails Pro Node Renderer on port `3800`
 - local nginx now boots once `helperai.dev` cert files exist
 
 That means the repository is now ready for comparison work on this machine.
@@ -85,36 +114,65 @@ That means the repository is now ready for comparison work on this machine.
 - `make local` initially left nginx down because `docker/local-nginx/helperai_dev.crt` and `.key` were missing.
 - The repository already includes `bin/generate_ssl_certificates` for this, but on macOS it may fail at `mkcert -install` if local sudo access is not available.
 - For local-only boot, generating the `helperai.dev` cert files without installing the CA is sufficient to get nginx running, though browsers may still warn about trust.
+- Browser measurements are currently using a mismatched local Chrome and chromedriver pair, which adds noise even when the route-level averages are stable enough to compare.
 
-## Verified baseline state
-
-- Targeted command: `bundle exec rspec spec/controllers/dashboard_controller_spec.rb spec/presenters/creator_home_presenter_spec.rb`
-- Result after seeding merchant accounts in test: `44 examples, 0 failures`
-- This gives the experiment a bounded baseline surface before any React 19, Rspack, or React on Rails work lands.
-
-## Verified current implementation state
+## Verified implementation state
 
 - Development build: `RAILS_ENV=development NODE_ENV=development bin/shakapacker --mode development`
-- Result: successful Rspack build for both the main app bundles and widget bundles
+  Result: successful Rspack build for both the main app bundles and widget bundles
 - Production build: `RAILS_ENV=production NODE_ENV=production bin/shakapacker`
-- Result: successful Rspack build with asset-size warnings but no compilation failures
+  Result: successful Rspack build with asset-size warnings but no compilation failures
 - Dev server: `RAILS_ENV=development NODE_ENV=development bin/shakapacker-dev-server`
-- Result: boots successfully on `https://gumroad.dev:3035/`
-- `npm run build`
-- Result: now succeeds after removing webpack-only CLI flags from the npm scripts
+  Result: boots successfully on `https://gumroad.dev:3035/`
+- Standalone RSC build: `npm run build:rsc-demo`
+  Result: successful React on Rails Pro bundle build
 
 ## Current blocker for calling the branch "review ready"
 
-The build path is working, but React 19 adoption still exposes broad TypeScript cleanup work across the app.
+The build path is working and the matched comparison surface is running, but two blockers remain before this is review ready as a persuasive stacked branch:
 
-Current `npx tsc --noEmit` results show app-wide errors in categories like:
+- React 19 adoption still exposes broad TypeScript cleanup work across the app.
+- The warmed matched RSC pass wins on user-visible timing, but not on server response timing.
+
+Current `npx tsc --noEmit` results still show app-wide errors in categories like:
 
 - stricter React 19 `ref` typing
 - callback refs that return values instead of `void`
 - implicit `any` in callbacks that previously slipped through
 - at least one `isolatedModules`-related type-only import fix
 
-That means the branch has crossed the important threshold of "Rspack migration is viable here", but it has not yet crossed the threshold of "React 19 upgrade is low-noise enough for easy upstream review."
+That means the branch has crossed the important threshold of "Rspack migration is viable here" and "a matched React on Rails Pro comparison is feasible here", but it has not yet crossed the threshold of "this is an easy upstream review with a strong, clean runtime-performance story."
+
+## Current matched comparison result
+
+The warmed matched Inertia-versus-RSC comparison pair is now measured.
+
+Short version:
+
+- the `RSC` demo works end to end under React on Rails Pro
+- the `Inertia` control works end to end on the same reduced data surface
+- the `RSC` route now renders through the same `inertia` outer layout as the control so the comparison is cleaner
+- the response-end pass shrank the raw RSC response to nearly match the Inertia control on transfer size
+- the warmed matched `RSC` demo is faster on total navigation duration and `LCP`
+- the warmed matched `Inertia` control is still faster on server `responseEnd`
+
+Useful numbers:
+
+- warmed matched Inertia navigation duration: `492.03ms`
+- warmed matched RSC navigation duration: `429.90ms`
+- warmed matched Inertia LCP: `496.00ms`
+- warmed matched RSC LCP: `452.00ms`
+- warmed matched Inertia response end: `344.90ms`
+- warmed matched RSC response end: `371.20ms`
+- warmed matched Inertia HTML transfer: `14,401` bytes
+- warmed matched RSC HTML transfer: `15,444` bytes
+
+So the current conclusion is:
+
+- the comparison surface is real
+- the user-visible win is now real on the matched surface
+- the server-side tradeoff is still real, even after most of the raw response-size gap was removed
+- the performance pitch is promising, but not yet ready for upstream review
 
 ## Recommended next step
 
@@ -124,10 +182,11 @@ Recommended order:
 
 1. Preserve this branch as the "Shakapacker 10 plus Rspack viability" branch.
 2. Decide whether React 19 type cleanup belongs in the same branch or in a follow-up stacked branch.
-3. Treat the current dashboard measurements as the Inertia baseline to beat, not as a runtime conclusion.
-4. Add the smallest separate React on Rails Pro dashboard surface that keeps the same data and UI intent.
-5. Use RSC on the read-heavy dashboard sections to target lower client JS cost and equal or better page metrics.
-6. Only then decide whether a deeper migration story is warranted.
+3. Treat `/dashboard/inertia_demo` as the primary Inertia control, not the full dashboard.
+4. Keep `/dashboard/rsc_demo`, but treat the remaining `responseEnd` gap as renderer or streaming overhead, not just raw HTML weight.
+5. Keep CI honest with the GitHub-hosted demo validation workflow for this public repo: it validates the Rspack build, the targeted demo controller specs, and the standalone `npm run build:rsc-demo` path.
+6. Re-run the matched comparison after fixing the local Chrome and chromedriver mismatch.
+7. Only then decide whether a deeper migration story is warranted.
 
 ## Suggested branch sequence
 
@@ -145,4 +204,4 @@ Recommended order:
 
 ## Decision rule
 
-If the first React on Rails Pro plus RSC comparison cannot produce a narrow, credible, evidence-backed runtime or composition win, then the right output is better positioning insight, not a migration pitch.
+If the matched React on Rails Pro plus RSC comparison cannot keep the user-visible win while making the server-response tradeoff understandable, then the right output is better positioning insight, not a migration pitch.

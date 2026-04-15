@@ -23,6 +23,12 @@ const hash = isProduction ? "-[contenthash]" : "";
 const miniCssHash = isProduction ? "-[contenthash:8]" : "";
 const mode = isProduction ? "production" : "development";
 const widgetRoot = path.join(sourcePath, "widget");
+const excludedMainEntries = new Set([
+  "dashboard_rsc_demo",
+  "server-bundle",
+  "rsc-bundle",
+  "dashboard_rsc_demo_server_entry",
+]);
 const transpileNodeModulesPackages = [`${path.sep}node_modules${path.sep}ts-safe-cast${path.sep}`];
 const shouldExcludeFromTranspile = (resourcePath) =>
   resourcePath.includes(`${path.sep}node_modules${path.sep}`) &&
@@ -203,7 +209,9 @@ const baseOutput = {
 const mainEntry = {};
 for (const file of fs.readdirSync(context)) {
   if (file.startsWith(".")) continue;
-  (mainEntry[path.parse(file).name] ??= []).push(`./${file}`);
+  const entryName = path.parse(file).name;
+  if (excludedMainEntries.has(entryName)) continue;
+  (mainEntry[entryName] ??= []).push(`./${file}`);
 }
 
 const mainConfig = {
