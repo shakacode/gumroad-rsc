@@ -21,7 +21,8 @@ DEFAULTS = {
   runs: 3,
   server_warmup_requests: 0,
   timeout: 30,
-  headed: false
+  headed: false,
+  skip_screenshot: false
 }.freeze
 
 def parse_options
@@ -41,6 +42,7 @@ def parse_options
     parser.on("--server-warmup-requests N", Integer) { |value| options[:server_warmup_requests] = value }
     parser.on("--timeout SECONDS", Integer) { |value| options[:timeout] = value }
     parser.on("--headed") { options[:headed] = true }
+    parser.on("--skip-screenshot") { options[:skip_screenshot] = true }
   end.parse!
 
   options
@@ -662,7 +664,7 @@ def main
       metrics["run"] = index + 1
       runs << metrics
 
-      if index.zero?
+      if index.zero? && !options[:skip_screenshot]
         driver.save_screenshot(File.join(options[:output_dir], "#{options[:label]}-#{target_slug}.png"))
       end
     ensure
@@ -691,4 +693,4 @@ def main
   puts JSON.pretty_generate(summary)
 end
 
-main
+main if $PROGRAM_NAME == __FILE__

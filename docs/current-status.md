@@ -30,6 +30,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - Documented measured results in [performance-findings.md](./performance-findings.md)
 - Added a browser-level smoke spec that renders both `/dashboard/inertia_demo` and `/dashboard/rsc_demo` through a real headless browser in CI
 - Added route-scoped `Server-Timing` instrumentation to both comparison routes and to the benchmark output
+- Added an alternating benchmark runner in `scripts/perf/compare_dashboard_routes.rb` so route order is balanced across cycles
 - Installed Ruby gems locally
 - Installed `node_modules` locally
 - Brought up the Docker-backed local services
@@ -85,13 +86,13 @@ Short version:
 
 - Rspack is a strong developer-performance win here
 - no route-level runtime win was expected from the bundler swap by itself
-- the latest instrumented local `RSC` pass beats the matched `Inertia` control on total navigation duration, `LCP`, and `responseEnd`
-- a rerun of the Inertia control after the RSC batch improved the control by about `9-10%`, so cache order and warm-state effects are real
-- even against that more-warmed Inertia rerun, the `RSC` route still wins on browser timing and route-scoped `Server-Timing`
+- the stricter alternating local benchmark still has the `RSC` route ahead on total navigation duration and `LCP`
+- that stricter method keeps `responseEnd` and route-level `action_total` modestly in the Inertia control's favor
+- route order and warm-state effects are real enough that the alternating runner is now the benchmark method that matters
 
-That means the demo is now real, and the performance story is stronger, but the next missing piece is repeatability rather than basic feasibility.
+That means the demo is now real, the user-visible story is still favorable, and the current tradeoff is cleaner to explain.
 
-The missing piece is no longer "can this compile?" The missing piece is "does the favorable local result survive stricter measurement discipline and a production-like renderer setup?"
+The missing piece is no longer "can this compile?" The missing piece is "does the favorable local result survive production-like measurement discipline and renderer profiling?"
 
 The benchmark rubric for that decision now lives in [rsc-benchmark-plan.md](./rsc-benchmark-plan.md).
 
@@ -135,7 +136,7 @@ That means the repository is now ready for comparison work on this machine.
 The build path is working and the matched comparison surface is running, but two blockers remain before this is review ready as a persuasive stacked branch:
 
 - React 19 adoption still exposes broad TypeScript cleanup work across the app.
-- The strongest local result is still a development-mode measurement with confirmed cache-order sensitivity and a mismatched Chrome/chromedriver pair.
+- The strictest local result is still a development-mode measurement with a mismatched Chrome/chromedriver pair and no renderer-internal profiling yet.
 
 Current `npx tsc --noEmit` results still show app-wide errors in categories like:
 
@@ -146,9 +147,9 @@ Current `npx tsc --noEmit` results still show app-wide errors in categories like
 
 That means the branch has crossed the important threshold of "Rspack migration is viable here" and "a matched React on Rails Pro comparison is feasible here", but it has not yet crossed the threshold of "this is an easy upstream review with a repeatable, production-like runtime-performance story."
 
-## Latest instrumented local comparison result
+## Latest balanced alternating local comparison result
 
-The latest local comparison now includes route-scoped `Server-Timing` on both routes.
+The strictest current local comparison uses `scripts/perf/compare_dashboard_routes.rb`, which rotates route order by cycle instead of relying on separate grouped batches.
 
 Short version:
 
@@ -156,31 +157,32 @@ Short version:
 - the `Inertia` control works end to end on the same reduced data surface
 - the `RSC` route now renders through the same `inertia` outer layout as the control so the comparison is cleaner
 - the response-end pass shrank the raw RSC response to nearly match the Inertia control on transfer size
-- the first instrumented batch showed a large RSC advantage, but rerunning the Inertia control afterward improved the control by about `9-10%`
-- even against that more-warmed Inertia rerun, the `RSC` route is still faster on total navigation duration, `LCP`, and `responseEnd`
-- the route-scoped timings also show the `RSC` route ahead on `action_total`, `compare_props`, `compare_creator_home`, and `sql.active_record`
+- earlier grouped batches overstated the RSC advantage because route order mattered
+- under the balanced alternating method, the `RSC` route is still faster on total navigation duration and `LCP`
+- under that same method, the Inertia control remains modestly faster on `responseEnd` and route-level `action_total`
+- the position split shows the Inertia control is more sensitive to route order than the RSC route, which is useful context but not a reason to ignore the stricter aggregate result
 
 Useful numbers:
 
-- post-RSC Inertia rerun navigation duration: `585.03ms`
-- instrumented RSC navigation duration: `461.97ms`
-- post-RSC Inertia rerun LCP: `610.67ms`
-- instrumented RSC LCP: `484.00ms`
-- post-RSC Inertia rerun response end: `433.43ms`
-- instrumented RSC response end: `396.50ms`
-- post-RSC Inertia rerun `action_total`: `253.73ms`
-- instrumented RSC `action_total`: `229.94ms`
-- post-RSC Inertia rerun `compare_props`: `225.14ms`
-- instrumented RSC `compare_props`: `194.60ms`
-- post-RSC Inertia rerun HTML transfer: `14,244` bytes
-- instrumented RSC HTML transfer: `15,265` bytes
+- alternating Inertia navigation duration: `568.47ms`
+- alternating RSC navigation duration: `501.53ms`
+- alternating Inertia LCP: `602.00ms`
+- alternating RSC LCP: `525.00ms`
+- alternating Inertia response end: `423.23ms`
+- alternating RSC response end: `441.65ms`
+- alternating Inertia `action_total`: `250.50ms`
+- alternating RSC `action_total`: `278.32ms`
+- alternating Inertia `compare_props`: `226.41ms`
+- alternating RSC `compare_props`: `236.16ms`
+- alternating Inertia HTML transfer: `14,240.5` bytes
+- alternating RSC HTML transfer: `15,265.0` bytes
 
 So the current conclusion is:
 
 - the comparison surface is real
 - the user-visible win is now real on the matched surface
-- the latest local pass also points to a route-level server-side win
-- measurement order clearly matters, so the next step is to validate repeatability rather than declare victory
+- the current stricter method still shows a real server-side tradeoff
+- measurement order clearly matters, and the alternating runner now gives us a more defensible local result
 - the performance pitch is promising, but not yet ready for upstream review
 
 ## Recommended next step
@@ -192,10 +194,10 @@ Recommended order:
 1. Preserve this branch as the "Shakapacker 10 plus Rspack viability" branch.
 2. Decide whether React 19 type cleanup belongs in the same branch or in a follow-up stacked branch.
 3. Treat `/dashboard/inertia_demo` as the primary Inertia control, not the full dashboard.
-4. Keep `/dashboard/rsc_demo`, but use the new `Server-Timing` data to isolate which parts of the controller and presenter work are actually moving the result.
+4. Keep `/dashboard/rsc_demo`, but use the alternating runner and route-scoped `Server-Timing` together when making any performance claim.
 5. Keep CI honest with the GitHub-hosted demo validation workflow for this public repo: it validates the Rspack build, the targeted demo controller specs, and the standalone `npm run build:rsc-demo` path.
    It now also boots the Node renderer and runs a headless browser smoke spec for both demo routes.
-6. Re-run the matched comparison with a fixed Chrome/chromedriver pair and a production-like renderer setup.
+6. Re-run the alternating comparison with a fixed Chrome/chromedriver pair and a production-like renderer setup.
 7. Only then decide whether a deeper migration story is warranted.
 
 ## Suggested branch sequence
@@ -204,7 +206,8 @@ Recommended order:
 - `jg-codex/react19-rspack`
 - `jg-codex/react19-type-cleanup` if the type fallout is too noisy for the bundler branch
 - `jg-codex/react-on-rails-pro-demo`
-- `jg-codex/rsc-dashboard-poc`
+- `jg-codex/demo-server-timing`
+- `jg-codex/benchmark-discipline`
 
 ## Adjacent ideas to keep documented but out of scope for the first demo
 
