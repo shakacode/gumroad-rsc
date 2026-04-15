@@ -303,6 +303,7 @@ What still matters from this repeat:
 - the matched-driver rerun removed the earlier browser-driver mismatch caveat
 - route-scoped server averages were roughly neutral-to-favorable for the RSC route on this pass
 - median user-visible metrics still favored the RSC route
+- the recovered comparison JSON now carries median and `p95` primary-metric deltas plus per-path slowest-pack-resource summaries, so this outlier is visible without manual per-run inspection
 
 That means the clean-driver repeat increased confidence in the benchmark discipline, but it also showed that development-mode asset timing is still noisy enough that a production-like rerun is the next real step.
 

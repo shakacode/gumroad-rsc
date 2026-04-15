@@ -35,6 +35,8 @@ PRIMARY_COMPARISON_METRICS = {
   renderDispatchMs: [:serverTiming, "render_dispatch", :durationMs]
 }.freeze
 
+PRIMARY_COMPARISON_STATISTICS = %i[average median p95].freeze
+
 def parse_compare_options
   options = COMPARE_DEFAULTS.merge(paths: [])
 
@@ -181,7 +183,8 @@ def summarize_paths(path_samples)
       count: samples.length,
       averages: summarize_runs(samples),
       distributions: summarize_run_distributions(samples),
-      byExecutionPosition: summarize_position_effects(samples)
+      byExecutionPosition: summarize_position_effects(samples),
+      slowestPackResources: summarize_slowest_pack_resources(samples)
     }
   end
 end
@@ -193,12 +196,26 @@ def metric_delta(reference, candidate)
   ((candidate - reference) / reference.to_f * 100).round(1)
 end
 
-def summarize_primary_deltas(path_summaries, baseline_path, candidate_path)
+def summary_metric_value(path_summaries, path, key_path, statistic:)
+  if statistic == :average
+    return path_summaries.dig(path, :averages, *key_path)
+  end
+
+  if key_path.first == :serverTiming
+    _, timing_name = key_path
+    return path_summaries.dig(path, :distributions, :serverTiming, timing_name, :stats, statistic)
+  end
+
+  path_summaries.dig(path, :distributions, *key_path, statistic)
+end
+
+def summarize_primary_deltas(path_summaries, baseline_path, candidate_path, statistic:)
   PRIMARY_COMPARISON_METRICS.each_with_object({}) do |(metric_name, key_path), summary|
-    baseline_value = path_summaries.dig(baseline_path, :averages, *key_path)
-    candidate_value = path_summaries.dig(candidate_path, :averages, *key_path)
+    baseline_value = summary_metric_value(path_summaries, baseline_path, key_path, statistic:)
+    candidate_value = summary_metric_value(path_summaries, candidate_path, key_path, statistic:)
 
     summary[metric_name] = {
+      statistic: statistic.to_s,
       baselinePath: baseline_path,
       candidatePath: candidate_path,
       baselineValue: baseline_value,
@@ -216,10 +233,47 @@ def build_comparison_summary(paths, path_summaries)
     candidates: paths.drop(1).map do |candidate_path|
       {
         candidatePath: candidate_path,
-        primaryMetricDeltas: summarize_primary_deltas(path_summaries, baseline_path, candidate_path)
+        primaryMetricDeltas: PRIMARY_COMPARISON_STATISTICS.each_with_object({}) do |statistic, summary|
+          summary[statistic] = summarize_primary_deltas(
+            path_summaries,
+            baseline_path,
+            candidate_path,
+            statistic:
+          )
+        end
       }
     end
   }
+end
+
+def sample_excerpt(sample)
+  {
+    measurementLabel: sample["measurementLabel"],
+    cycle: sample["cycle"],
+    positionInCycle: sample["positionInCycle"],
+    requestedPath: sample["requestedPath"]
+  }
+end
+
+def slowest_pack_resource_entries(samples)
+  samples.flat_map do |sample|
+    Array(sample.dig("packs", "largest")).map do |resource|
+      {
+        **sample_excerpt(sample),
+        name: resource["name"],
+        durationMs: resource["duration"],
+        transferSize: resource["transferSize"],
+        encodedBodySize: resource["encodedBodySize"],
+        decodedBodySize: resource["decodedBodySize"]
+      }
+    end
+  end
+end
+
+def summarize_slowest_pack_resources(samples, limit: 5)
+  slowest_pack_resource_entries(samples)
+    .sort_by { |resource| -resource.fetch(:durationMs, 0).to_f }
+    .first(limit)
 end
 
 def main

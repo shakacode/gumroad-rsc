@@ -32,6 +32,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - Added route-scoped `Server-Timing` instrumentation to both comparison routes and to the benchmark output
 - Added an alternating benchmark runner in `scripts/perf/compare_dashboard_routes.rb` so route order is balanced across cycles
 - Added benchmark runner support for `--require-driver-match` and `--reuse-existing` so headline runs fail fast on browser-driver mismatch and long runs can be recovered without remeasuring completed samples
+- Added median and `p95` primary-metric deltas plus slowest-pack-resource summaries to the alternating comparison output so dev-asset outliers are obvious without manual per-run digging
 - Installed Ruby gems locally
 - Installed `node_modules` locally
 - Brought up the Docker-backed local services
