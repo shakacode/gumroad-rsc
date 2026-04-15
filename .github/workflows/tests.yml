@@ -107,7 +107,8 @@ jobs:
         env:
           RAILS_ENV: test
         run: |
-          bundle exec rails db:prepare
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
           bundle exec rails runner 'load Rails.root.join("db/seeds/010_stripe_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/020_braintree_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/030_paypal_merchant_account_seeds.rb")'
 
       - name: Run demo controller specs
