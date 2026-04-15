@@ -75,6 +75,12 @@ jobs:
             echo "has_rsc_build=false" >> "$GITHUB_OUTPUT"
           fi
 
+          if grep -q 'assets_bundler: "rspack"' config/shakapacker.yml; then
+            echo "needs_test_manifest_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_test_manifest_build=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Export JS routes
         run: npm run setup
 
@@ -135,6 +141,13 @@ jobs:
           bundle exec rails db:create
           bundle exec rails db:schema:load
           bundle exec rails runner 'load Rails.root.join("db/seeds/010_stripe_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/020_braintree_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/030_paypal_merchant_account_seeds.rb")'
+
+      - name: Build test Shakapacker manifest
+        if: ${{ steps.demo_targets.outputs.has_controller_specs == 'true' && steps.demo_targets.outputs.needs_test_manifest_build == 'true' }}
+        env:
+          RAILS_ENV: test
+          NODE_ENV: test
+        run: bin/shakapacker
 
       - name: Run demo controller specs
         if: ${{ steps.demo_targets.outputs.has_controller_specs == 'true' }}
