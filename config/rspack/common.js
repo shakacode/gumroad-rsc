@@ -2,7 +2,7 @@ import * as rspack from "@rspack/core";
 import fs from "fs";
 import { fileURLToPath } from "node:url";
 import path from "path";
-import { RspackManifestPlugin } from "rspack-manifest-plugin";
+import { getCompilerHooks, RspackManifestPlugin } from "rspack-manifest-plugin";
 import tsCast from "ts-safe-cast/transformer.js";
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer";
 
@@ -22,7 +22,6 @@ const isProduction = environment === "production";
 const hash = isProduction ? "-[contenthash]" : "";
 const miniCssHash = isProduction ? "-[contenthash:8]" : "";
 const mode = isProduction ? "production" : "development";
-const manifestSeed = {};
 const widgetRoot = path.join(sourcePath, "widget");
 const excludedMainEntries = new Set([
   "dashboard_rsc_demo",
@@ -34,6 +33,7 @@ const transpileNodeModulesPackages = [`${path.sep}node_modules${path.sep}ts-safe
 const shouldExcludeFromTranspile = (resourcePath) =>
   resourcePath.includes(`${path.sep}node_modules${path.sep}`) &&
   !transpileNodeModulesPackages.some((packagePath) => resourcePath.includes(packagePath));
+const manifestParts = new Map();
 
 const styleLoaders = [
   rspack.CssExtractRspackPlugin.loader,
@@ -138,36 +138,55 @@ const sassRule = {
   ],
 };
 
-const createManifestPlugin = () =>
-  new RspackManifestPlugin({
+const buildManifestPayload = (files, entrypoints) => ({
+  ...Object.fromEntries(files.map((file) => [file.name, file.path])),
+  entrypoints: Object.fromEntries(
+    Object.entries(entrypoints).map(([entrypointName, entrypointFiles]) => {
+      const js = entrypointFiles
+        .filter((file) => file.endsWith(".js") && !file.includes(".hot-update."))
+        .map((file) => `${publicOutputPath}${file}`);
+      const css = entrypointFiles
+        .filter((file) => file.endsWith(".css") && !file.includes(".hot-update."))
+        .map((file) => `${publicOutputPath}${file}`);
+
+      return [entrypointName, { assets: { js, css } }];
+    }),
+  ),
+});
+
+const mergeManifestPayloads = () =>
+  [...manifestParts.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .reduce(
+      (merged, [, manifest]) => ({
+        ...merged,
+        ...Object.fromEntries(Object.entries(manifest).filter(([key]) => key !== "entrypoints")),
+        entrypoints: {
+          ...merged.entrypoints,
+          ...(manifest.entrypoints || {}),
+        },
+      }),
+      { entrypoints: {} },
+    );
+
+const createManifestPlugin = (manifestKey) => {
+  const plugin = new RspackManifestPlugin({
     fileName: "manifest.json",
     publicPath: publicOutputPath,
-    seed: manifestSeed,
     writeToFileEmit: true,
-    generate: (seed, files, entrypoints) => {
-      files.forEach((file) => {
-        seed[file.name] = file.path;
-      });
-
-      seed.entrypoints = {
-        ...(seed.entrypoints || {}),
-        ...Object.fromEntries(
-          Object.entries(entrypoints).map(([entrypointName, entrypointFiles]) => {
-            const js = entrypointFiles
-              .filter((file) => file.endsWith(".js") && !file.includes(".hot-update."))
-              .map((file) => `${publicOutputPath}${file}`);
-            const css = entrypointFiles
-              .filter((file) => file.endsWith(".css") && !file.includes(".hot-update."))
-              .map((file) => `${publicOutputPath}${file}`);
-
-            return [entrypointName, { assets: { js, css } }];
-          }),
-        ),
-      };
-
-      return seed;
-    },
+    generate: (_seed, files, entrypoints) => buildManifestPayload(files, entrypoints),
   });
+
+  return {
+    apply(compiler) {
+      plugin.apply(compiler);
+      getCompilerHooks(compiler).beforeEmit.tap("ShakapackerManifestMerge", (manifest) => {
+        manifestParts.set(manifestKey, manifest);
+        return mergeManifestPayloads();
+      });
+    },
+  };
+};
 
 const createCssExtractPlugin = () =>
   new rspack.CssExtractRspackPlugin({
@@ -184,6 +203,7 @@ const baseOutput = {
   chunkFilename: `js/[name]${hash}.chunk.js`,
   hotUpdateChunkFilename: "js/[id].[fullhash].hot-update.js",
   publicPath: publicOutputPath,
+  environment: { asyncFunction: true },
 };
 
 const mainEntry = {};
@@ -195,6 +215,7 @@ for (const file of fs.readdirSync(context)) {
 }
 
 const mainConfig = {
+  name: "main",
   mode,
   devtool: "cheap-module-source-map",
   context,
@@ -245,7 +266,7 @@ const mainConfig = {
     ],
   },
   plugins: [
-    createManifestPlugin(),
+    createManifestPlugin("main"),
     createCssExtractPlugin(),
     new rspack.ProvidePlugin({ Routes: "$app/utils/routes" }),
     process.env.WEBPACK_ANALYZE === "1" && new BundleAnalyzerPlugin(),
@@ -255,6 +276,7 @@ const mainConfig = {
 };
 
 const widgetConfig = {
+  name: "widget",
   mode,
   context: widgetRoot,
   entry: {
@@ -270,7 +292,7 @@ const widgetConfig = {
     rules: [sassRule, assetRule, javascriptRule, typescriptRule],
   },
   plugins: [
-    createManifestPlugin(),
+    createManifestPlugin("widget"),
     createCssExtractPlugin(),
     new rspack.EnvironmentPlugin(["ROOT_DOMAIN", "SHORT_DOMAIN", "DOMAIN", "PROTOCOL"]),
   ],

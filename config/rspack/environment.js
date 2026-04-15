@@ -1,3 +1,5 @@
+export const getConfigEnvironment = () => process.env.RAILS_ENV || "development";
+
 const getEnvironment = () => {
   if (process.env.NODE_ENV) return process.env.NODE_ENV;
   if (process.env.RAILS_ENV === "test") return "test";
