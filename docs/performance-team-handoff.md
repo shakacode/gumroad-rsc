@@ -211,4 +211,5 @@ The repo is public, the stacked PRs are open, and the React on Rails issue is av
 
 The artifact paths listed above are local benchmark outputs, so they are shareable through a repo checkout and branch work, but not through GitHub artifact hosting.
 The measurement script also now records browser/version provenance and percentile-style summary stats in those JSON outputs so the performance-team handoff is less dependent on ad hoc environment notes.
+The alternating comparison JSON now also includes average, median, and `p95` primary-metric deltas plus per-path slowest pack resources, so outliers like the `19.3s` cached CSS load are visible without opening every per-run file.
 The earlier 3-run grouped batches are still useful diagnostic artifacts, but the alternating comparison above is the benchmark result that should be circulated because it explicitly balances route order.
