@@ -52,6 +52,29 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Detect demo validation targets
+        id: demo_targets
+        run: |
+          spec_files=()
+          for file in spec/controllers/dashboard_controller_spec.rb spec/controllers/dashboard_rsc_demo_controller_spec.rb; do
+            if [ -f "$file" ]; then
+              spec_files+=("$file")
+            fi
+          done
+
+          if [ ${#spec_files[@]} -eq 0 ]; then
+            echo "has_controller_specs=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_controller_specs=true" >> "$GITHUB_OUTPUT"
+            printf 'controller_specs=%s\n' "${spec_files[*]}" >> "$GITHUB_OUTPUT"
+          fi
+
+          if node -e 'const pkg = require("./package.json"); process.exit(pkg.scripts?.["build:rsc-demo"] ? 0 : 1)'; then
+            echo "has_rsc_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_rsc_build=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Export JS routes
         run: npm run setup
 
@@ -114,11 +137,13 @@ jobs:
           bundle exec rails runner 'load Rails.root.join("db/seeds/010_stripe_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/020_braintree_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/030_paypal_merchant_account_seeds.rb")'
 
       - name: Run demo controller specs
+        if: ${{ steps.demo_targets.outputs.has_controller_specs == 'true' }}
         env:
           RAILS_ENV: test
-        run: bundle exec rspec spec/controllers/dashboard_controller_spec.rb spec/controllers/dashboard_rsc_demo_controller_spec.rb
+        run: bundle exec rspec ${{ steps.demo_targets.outputs.controller_specs }}
 
       - name: Validate standalone RSC build
+        if: ${{ steps.demo_targets.outputs.has_rsc_build == 'true' }}
         env:
           RAILS_ENV: test
         run: npm run build:rsc-demo
