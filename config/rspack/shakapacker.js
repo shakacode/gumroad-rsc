@@ -1,6 +1,4 @@
-import fs from "fs";
-import yaml from "js-yaml";
-import { fileURLToPath } from "node:url";
 import { getConfigEnvironment } from "./environment.js";
+import { loadShakapackerConfig } from "../shakapackerConfig.js";
 
-export default yaml.load(fs.readFileSync(fileURLToPath(import.meta.resolve("../shakapacker.yml"))))[getConfigEnvironment()];
+export default loadShakapackerConfig(getConfigEnvironment());
