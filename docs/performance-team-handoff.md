@@ -18,7 +18,7 @@ The goal is to measure whether a bounded RSC surface can produce a meaningful us
 - stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/gumroad-rsc/pull/1)
 - stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2)
 - stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/gumroad-rsc/pull/3)
-- React on Rails issue: [react_on_rails#3128](https://github.com/shakacode/react_on_rails/issues/3128)
+- React on Rails issue: [react_on_rails#3144](https://github.com/shakacode/react_on_rails/issues/3144)
 
 ## Current conclusion
 
@@ -36,7 +36,7 @@ What is already true:
 What is not yet proven:
 
 - the strongest result is still a local-development measurement
-- the benchmark harness is still using a mismatched local Chrome and chromedriver pair
+- the earlier headline run used a mismatched local Chrome and chromedriver pair, and the later matched-driver repeat exposed a development-asset outlier on one RSC run
 - measurement order affects cache state enough that grouped batches can overstate the gap
 - the balanced alternating run still shows a modest server-side tradeoff for the RSC route
 
@@ -99,6 +99,22 @@ The response-end pass reduced the RSC route from roughly:
 That means the current user-visible advantage is not coming from a smaller HTML transfer alone.
 It also means the current server-side tradeoff is not explained by response size alone, because the HTML transfer is already close while `responseEnd` and `action_total` remain slightly worse under the balanced method.
 
+## Matched-driver repeat
+
+A later `8`-cycle repeat used a matching `Chrome 147` and `ChromeDriver 147` pair and recovered the final comparison JSON from the completed per-run files.
+
+The useful part of that rerun:
+
+- median navigation duration still favored RSC: `544.80ms` vs `396.65ms`
+- median `responseEnd` slightly favored RSC: `385.55ms` vs `375.75ms`
+- median `LCP` still favored RSC: `568.00ms` vs `426.00ms`
+
+The reason it is not the headline benchmark:
+
+- one RSC run reported a cached `dashboard_rsc_demo_styles.css` duration of about `19.3s` with `0` transfer bytes
+- that left `responseEnd` normal but poisoned mean `navigation` and `LCP`
+- the dev-asset outlier makes the repeat useful as a diagnostic and discipline check, not as the clean headline result
+
 ## How optimized is the current RSC implementation?
 
 Short answer:
@@ -143,7 +159,7 @@ It does **not** yet prove the full upside of RSC as an architecture.
 If the performance team wants the next round to be high signal, focus here:
 
 1. Re-run the comparison in a production-like mode with a dedicated renderer and a fixed Chrome/chromedriver pair.
-   The latest result is strong, but it is still local-development and cache-order sensitive.
+   The latest result is strong, but it is still local-development and sensitive to dev-asset timing noise.
 
 2. Instrument the React on Rails Pro renderer and streaming path.
    We now have route-scoped Rails timing, but not renderer-internal timing.
@@ -181,17 +197,18 @@ The heavier internal Gumroad matrix still exists for the original codebase shape
 
 ## Key artifacts
 
-- [matched comparison JSON](../output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json)
-- [Inertia metrics JSON](../output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json)
-- [RSC metrics JSON](../output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json)
-- [Balanced alternating comparison JSON](../output/playwright/dashboard-perf/dashboard-demo-alternating-4-comparison.json)
-- [Instrumented Inertia rerun JSON](../output/playwright/dashboard-perf/inertia-demo-server-timing-3-post-rsc-dashboard-inertia-demo-metrics.json)
-- [Instrumented RSC JSON](../output/playwright/dashboard-perf/rsc-demo-server-timing-3-dashboard-rsc-demo-metrics.json)
+- matched comparison JSON: `output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json`
+- Inertia metrics JSON: `output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json`
+- RSC metrics JSON: `output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json`
+- balanced alternating comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-4-comparison.json`
+- instrumented Inertia rerun JSON: `output/playwright/dashboard-perf/inertia-demo-server-timing-3-post-rsc-dashboard-inertia-demo-metrics.json`
+- instrumented RSC JSON: `output/playwright/dashboard-perf/rsc-demo-server-timing-3-dashboard-rsc-demo-metrics.json`
+- clean-driver repeat comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-8-clean-driver-comparison.json`
 
 ## Current sharing status
 
 The repo is public, the stacked PRs are open, and the React on Rails issue is available as the team-facing discussion hub.
 
-The JSON artifacts linked above are local benchmark outputs, so they are shareable through the repo checkout and branch work, but not through GitHub artifact hosting.
+The artifact paths listed above are local benchmark outputs, so they are shareable through a repo checkout and branch work, but not through GitHub artifact hosting.
 The measurement script also now records browser/version provenance and percentile-style summary stats in those JSON outputs so the performance-team handoff is less dependent on ad hoc environment notes.
 The earlier 3-run grouped batches are still useful diagnostic artifacts, but the alternating comparison above is the benchmark result that should be circulated because it explicitly balances route order.

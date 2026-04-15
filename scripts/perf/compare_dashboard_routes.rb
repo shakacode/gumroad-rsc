@@ -17,7 +17,9 @@ COMPARE_DEFAULTS = {
   cycles: 4,
   server_warmup_requests: 1,
   timeout: DEFAULTS[:timeout],
-  headed: false
+  headed: false,
+  require_driver_match: false,
+  reuse_existing: false
 }.freeze
 
 PRIMARY_COMPARISON_METRICS = {
@@ -50,6 +52,8 @@ def parse_compare_options
     parser.on("--server-warmup-requests N", Integer) { |value| options[:server_warmup_requests] = value }
     parser.on("--timeout SECONDS", Integer) { |value| options[:timeout] = value }
     parser.on("--headed") { options[:headed] = true }
+    parser.on("--require-driver-match") { options[:require_driver_match] = true }
+    parser.on("--reuse-existing") { options[:reuse_existing] = true }
   end.parse!
 
   raise OptionParser::MissingArgument, "at least two --path values are required" if options[:paths].uniq.length < 2
@@ -94,7 +98,26 @@ def measurement_command(measure_script_path:, options:, path:, run_label:, outpu
 
   command.concat(["--measure-base-url", options[:measure_base_url]]) if options[:measure_base_url]
   command << "--headed" if options[:headed]
+  command << "--require-driver-match" if options[:require_driver_match]
   command
+end
+
+def measurement_summary_path(output_dir:, run_label:, path:)
+  File.join(output_dir, "#{run_label}-#{path_slug(path)}-metrics.json")
+end
+
+def load_measurement_summary(summary_path:, path:, cycle_index:, position_index:)
+  summary = JSON.parse(File.read(summary_path))
+  summary_path_value = summary["path"]
+  raise "existing measurement #{summary_path} is for #{summary_path_value.inspect}, not #{path.inspect}" if summary_path_value != path
+
+  sample = summary.fetch("samples").fetch(0)
+  sample["measurementLabel"] = summary["label"]
+  sample["cycle"] = cycle_index + 1
+  sample["positionInCycle"] = position_index + 1
+  sample["requestedPath"] = path
+
+  { summary:, sample:, summary_path: }
 end
 
 def execute_measurement!(measure_script_path:, options:, path:, cycle_index:, position_index:)
@@ -102,6 +125,17 @@ def execute_measurement!(measure_script_path:, options:, path:, cycle_index:, po
   FileUtils.mkdir_p(output_dir)
 
   run_label = "#{options[:label]}-cycle#{cycle_index + 1}-position#{position_index + 1}"
+  summary_path = measurement_summary_path(output_dir:, run_label:, path:)
+
+  if options[:reuse_existing] && File.exist?(summary_path)
+    return load_measurement_summary(
+      summary_path:,
+      path:,
+      cycle_index:,
+      position_index:
+    ).merge(stdout: "", stderr: "", reused_existing: true)
+  end
+
   command = measurement_command(
     measure_script_path:,
     options:,
@@ -117,15 +151,12 @@ def execute_measurement!(measure_script_path:, options:, path:, cycle_index:, po
     raise "measurement failed for #{path} at cycle #{cycle_index + 1}, position #{position_index + 1}"
   end
 
-  summary_path = File.join(output_dir, "#{run_label}-#{path_slug(path)}-metrics.json")
-  summary = JSON.parse(File.read(summary_path))
-  sample = summary.fetch("samples").fetch(0)
-  sample["measurementLabel"] = summary["label"]
-  sample["cycle"] = cycle_index + 1
-  sample["positionInCycle"] = position_index + 1
-  sample["requestedPath"] = path
-
-  { summary:, sample:, summary_path:, stdout:, stderr: }
+  load_measurement_summary(
+    summary_path:,
+    path:,
+    cycle_index:,
+    position_index:
+  ).merge(stdout:, stderr:, reused_existing: false)
 end
 
 def summarize_position_effects(samples)
@@ -219,7 +250,8 @@ def main
         positionInCycle: position_index + 1,
         path:,
         label: result[:summary]["label"],
-        summaryPath: result[:summary_path]
+        summaryPath: result[:summary_path],
+        reusedExisting: result[:reused_existing]
       }
     end
   end
@@ -235,6 +267,8 @@ def main
     baseUrl: options[:base_url],
     measureBaseUrl: options[:measure_base_url] || options[:base_url],
     serverWarmupRequestsPerRun: options[:server_warmup_requests],
+    reuseExisting: options[:reuse_existing],
+    requireDriverMatch: options[:require_driver_match],
     environment:,
     browser:,
     cycleOrders: cycle_orders,

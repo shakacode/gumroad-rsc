@@ -32,7 +32,7 @@ The goal is not to argue that every Inertia page should be replaced. The goal is
 - [docs/current-status.md](docs/current-status.md)
 - [docs/performance-team-handoff.md](docs/performance-team-handoff.md)
 - [docs/performance-findings.md](docs/performance-findings.md)
-- [React on Rails issue #3128](https://github.com/shakacode/react_on_rails/issues/3128)
+- [React on Rails issue #3144](https://github.com/shakacode/react_on_rails/issues/3144)
 - [PR stack: baseline](https://github.com/shakacode/gumroad-rsc/pull/1), [React 19 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2), [React on Rails Pro + RSC](https://github.com/shakacode/gumroad-rsc/pull/3)
 
 ### What this repo currently proves
@@ -57,6 +57,7 @@ Latest balanced alternating local result on the reduced dashboard surface:
 
 This alternating run is the stricter method because it rotates route order by cycle instead of relying on separate batches.
 It keeps the user-visible win while preserving a measurable server-side tradeoff.
+It is still the safer headline than the later 8-cycle clean-driver repeat, because that repeat surfaced one dev-asset outlier on the RSC route even though its medians stayed favorable.
 
 This is enough for a stronger positioning story.
 It is still not enough for an upstream migration pitch or a production-performance claim.
@@ -94,7 +95,9 @@ These screenshots were captured from a signed-in local session on this branch.
    `/dashboard/inertia_demo`
    `/dashboard/rsc_demo`
 5. For the stricter benchmark method, run:
-   `ruby scripts/perf/compare_dashboard_routes.rb --base-url https://gumroad.dev --measure-base-url https://gumroad.dev --path /dashboard/inertia_demo --path /dashboard/rsc_demo --label dashboard-demo-alternating-4 --cycles 4 --server-warmup-requests 1`
+   `ruby scripts/perf/compare_dashboard_routes.rb --base-url https://gumroad.dev --measure-base-url https://gumroad.dev --path /dashboard/inertia_demo --path /dashboard/rsc_demo --label dashboard-demo-alternating-4 --cycles 4 --server-warmup-requests 1 --require-driver-match`
+
+If a long comparison run is interrupted after it writes per-run JSON files, rerun the same command with `--reuse-existing` to emit the final comparison summary without discarding completed samples.
 
 If you want the measured benchmark artifacts instead of a visual spot check, start with [docs/performance-findings.md](docs/performance-findings.md).
 

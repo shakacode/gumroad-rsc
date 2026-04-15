@@ -22,7 +22,8 @@ DEFAULTS = {
   server_warmup_requests: 0,
   timeout: 30,
   headed: false,
-  skip_screenshot: false
+  skip_screenshot: false,
+  require_driver_match: false
 }.freeze
 
 def parse_options
@@ -43,6 +44,7 @@ def parse_options
     parser.on("--timeout SECONDS", Integer) { |value| options[:timeout] = value }
     parser.on("--headed") { options[:headed] = true }
     parser.on("--skip-screenshot") { options[:skip_screenshot] = true }
+    parser.on("--require-driver-match") { options[:require_driver_match] = true }
   end.parse!
 
   options
@@ -430,6 +432,14 @@ def capability_value(capabilities, *keys)
   nil
 end
 
+def hash_value(hash, key)
+  hash[key] || hash[key.to_s]
+end
+
+def major_browser_version(version)
+  version.to_s[/\A\d+/]
+end
+
 def browser_metadata(driver)
   capabilities = driver.capabilities
   chrome_capabilities = capability_value(capabilities, :chrome)
@@ -446,6 +456,21 @@ def browser_metadata(driver)
   }.compact
 rescue StandardError
   nil
+end
+
+def validate_driver_match!(browser)
+  browser_version = hash_value(browser, :browserVersion)
+  chrome_driver_version = hash_value(browser, :chromeDriverVersion)
+  browser_major = major_browser_version(browser_version)
+  driver_major = major_browser_version(chrome_driver_version)
+
+  if browser_major.to_s.empty? || driver_major.to_s.empty?
+    raise "Chrome or chromedriver version could not be detected (Chrome #{browser_version.inspect}, ChromeDriver #{chrome_driver_version.inspect})"
+  end
+
+  return if browser_major == driver_major
+
+  raise "Chrome/chromedriver major versions differ (Chrome #{browser_version}, ChromeDriver #{chrome_driver_version})"
 end
 
 def environment_metadata
@@ -657,6 +682,7 @@ def main
       end
 
       browser ||= browser_metadata(driver)
+      validate_driver_match!(browser) if options[:require_driver_match]
       metrics = page_metrics(driver)
       validate_metrics!(metrics, target_url:)
       metrics["run"] = index + 1
@@ -677,6 +703,7 @@ def main
     path: options[:path],
     targetUrl: target_url,
     headed: options[:headed],
+    requireDriverMatch: options[:require_driver_match],
     runs: options[:runs],
     serverWarmupRequests: options[:server_warmup_requests],
     environment: environment_metadata,

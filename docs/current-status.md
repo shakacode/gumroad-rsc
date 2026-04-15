@@ -14,7 +14,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/gumroad-rsc/pull/1)
 - stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2)
 - stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/gumroad-rsc/pull/3)
-- React on Rails issue: [react_on_rails#3128](https://github.com/shakacode/react_on_rails/issues/3128)
+- React on Rails issue: [react_on_rails#3144](https://github.com/shakacode/react_on_rails/issues/3144)
 
 ## What is already done
 
@@ -31,6 +31,7 @@ This repository has moved past pure planning, through the Rspack migration branc
 - Added a browser-level smoke spec that renders both `/dashboard/inertia_demo` and `/dashboard/rsc_demo` through a real headless browser in CI
 - Added route-scoped `Server-Timing` instrumentation to both comparison routes and to the benchmark output
 - Added an alternating benchmark runner in `scripts/perf/compare_dashboard_routes.rb` so route order is balanced across cycles
+- Added benchmark runner support for `--require-driver-match` and `--reuse-existing` so headline runs fail fast on browser-driver mismatch and long runs can be recovered without remeasuring completed samples
 - Installed Ruby gems locally
 - Installed `node_modules` locally
 - Brought up the Docker-backed local services
@@ -118,7 +119,7 @@ That means the repository is now ready for comparison work on this machine.
 - `make local` initially left nginx down because `docker/local-nginx/helperai_dev.crt` and `.key` were missing.
 - The repository already includes `bin/generate_ssl_certificates` for this, but on macOS it may fail at `mkcert -install` if local sudo access is not available.
 - For local-only boot, generating the `helperai.dev` cert files without installing the CA is sufficient to get nginx running, though browsers may still warn about trust.
-- Browser measurements are currently using a mismatched local Chrome and chromedriver pair, which adds noise even when the route-level averages are stable enough to compare.
+- A later repeat with matching `Chrome 147` and `ChromeDriver 147` removed the earlier browser-driver mismatch, but one RSC dev-asset load still reported a `~19.3s` zero-transfer CSS duration, which is another reason the next pass needs production-like assets.
 
 ## Verified implementation state
 
@@ -136,7 +137,7 @@ That means the repository is now ready for comparison work on this machine.
 The build path is working and the matched comparison surface is running, but two blockers remain before this is review ready as a persuasive stacked branch:
 
 - React 19 adoption still exposes broad TypeScript cleanup work across the app.
-- The strictest local result is still a development-mode measurement with a mismatched Chrome/chromedriver pair and no renderer-internal profiling yet.
+- The strictest local result is still a development-mode measurement, and the matched-driver repeat exposed a dev-asset timing outlier while renderer-internal profiling is still missing.
 
 Current `npx tsc --noEmit` results still show app-wide errors in categories like:
 
@@ -183,6 +184,7 @@ So the current conclusion is:
 - the user-visible win is now real on the matched surface
 - the current stricter method still shows a real server-side tradeoff
 - measurement order clearly matters, and the alternating runner now gives us a more defensible local result
+- a later matched-driver repeat kept favorable medians for RSC, but it also exposed one dev-asset outlier that makes a production-like rerun the next real checkpoint
 - the performance pitch is promising, but not yet ready for upstream review
 
 ## Recommended next step
@@ -197,7 +199,7 @@ Recommended order:
 4. Keep `/dashboard/rsc_demo`, but use the alternating runner and route-scoped `Server-Timing` together when making any performance claim.
 5. Keep CI honest with the GitHub-hosted demo validation workflow for this public repo: it validates the Rspack build, the targeted demo controller specs, and the standalone `npm run build:rsc-demo` path.
    It now also boots the Node renderer and runs a headless browser smoke spec for both demo routes.
-6. Re-run the alternating comparison with a fixed Chrome/chromedriver pair and a production-like renderer setup.
+6. Re-run the alternating comparison with `--require-driver-match` and a production-like renderer and asset setup.
 7. Only then decide whether a deeper migration story is warranted.
 
 ## Suggested branch sequence

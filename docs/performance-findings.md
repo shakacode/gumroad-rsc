@@ -26,6 +26,7 @@ Local setup notes:
 - both measurements used the same Docker-backed local services and the same local database
 - route-level dashboard measurements required local Elasticsearch indices for `product_page_views`, `purchases`, and `confirmed_follower_events`
 - the dashboard harness authenticates over HTTP before loading the page in Chrome, so the measurement is not dependent on browser login behavior
+- artifact paths in this document point at local files under `output/playwright/dashboard-perf/`; they are intentionally ignored in git, so treat them as checkout-relative paths rather than GitHub links
 
 ## Bundler Baseline
 
@@ -43,10 +44,10 @@ Local setup notes:
 
 Artifacts:
 
-- [baseline screenshot](../output/playwright/dashboard-perf/baseline-webpack-dashboard.png)
-- [current screenshot](../output/playwright/dashboard-perf/current-rspack-dashboard.png)
-- [baseline metrics JSON](../output/playwright/dashboard-perf/baseline-webpack-dashboard-metrics.json)
-- [current metrics JSON](../output/playwright/dashboard-perf/current-rspack-dashboard-metrics.json)
+- baseline screenshot: `output/playwright/dashboard-perf/baseline-webpack-dashboard.png`
+- current screenshot: `output/playwright/dashboard-perf/current-rspack-dashboard.png`
+- baseline metrics JSON: `output/playwright/dashboard-perf/baseline-webpack-dashboard-metrics.json`
+- current metrics JSON: `output/playwright/dashboard-perf/current-rspack-dashboard-metrics.json`
 
 ## Interpretation Of The Bundler Branch
 
@@ -87,8 +88,8 @@ Important caveats:
 
 Artifacts:
 
-- [isolated RSC metrics JSON](../output/playwright/dashboard-perf/rsc-isolated-3-dashboard-rsc-demo-metrics.json)
-- [dashboard asset comparison JSON](../output/playwright/dashboard-perf/dashboard-vs-rsc-asset-comparison.json)
+- isolated RSC metrics JSON: `output/playwright/dashboard-perf/rsc-isolated-3-dashboard-rsc-demo-metrics.json`
+- dashboard asset comparison JSON: `output/playwright/dashboard-perf/dashboard-vs-rsc-asset-comparison.json`
 
 ## Interpretation Of The First RSC Pass
 
@@ -118,9 +119,9 @@ Why this comparison matters more:
 
 Artifacts:
 
-- [Inertia control metrics JSON](../output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json)
-- [RSC matched metrics JSON](../output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json)
-- [warmed matched comparison JSON](../output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json)
+- Inertia control metrics JSON: `output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json`
+- RSC matched metrics JSON: `output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json`
+- warmed matched comparison JSON: `output/playwright/dashboard-perf/warmed-matched-inertia-vs-rsc-comparison.json`
 
 ### Browser metrics
 
@@ -160,7 +161,7 @@ This is promising, but it is still not enough for an upstream migration pitch by
 
 - The win exists on a reduced comparison surface, not on the full dashboard.
 - The measurements are still local-development measurements, not production-like traces.
-- The browser harness is currently using a mismatched local Chrome and chromedriver pair, which adds noise even though the matched 3-run averages were stable enough to use.
+- The earlier grouped averages were captured before the benchmark runner could require a compatible Chrome and chromedriver pair, so they should be treated as directional rather than final.
 
 ## Server-Timing Follow-up
 
@@ -180,9 +181,9 @@ Important caveat:
 
 Artifacts:
 
-- [instrumented Inertia first-pass JSON](../output/playwright/dashboard-perf/inertia-demo-server-timing-3-dashboard-inertia-demo-metrics.json)
-- [instrumented Inertia post-RSC JSON](../output/playwright/dashboard-perf/inertia-demo-server-timing-3-post-rsc-dashboard-inertia-demo-metrics.json)
-- [instrumented RSC JSON](../output/playwright/dashboard-perf/rsc-demo-server-timing-3-dashboard-rsc-demo-metrics.json)
+- instrumented Inertia first-pass JSON: `output/playwright/dashboard-perf/inertia-demo-server-timing-3-dashboard-inertia-demo-metrics.json`
+- instrumented Inertia post-RSC JSON: `output/playwright/dashboard-perf/inertia-demo-server-timing-3-post-rsc-dashboard-inertia-demo-metrics.json`
+- instrumented RSC JSON: `output/playwright/dashboard-perf/rsc-demo-server-timing-3-dashboard-rsc-demo-metrics.json`
 
 ### Browser metrics against the warmer control
 
@@ -233,8 +234,8 @@ What changed in this pass:
 
 Artifacts:
 
-- [balanced alternating comparison JSON](../output/playwright/dashboard-perf/dashboard-demo-alternating-4-comparison.json)
-- [balanced alternating run directory](../output/playwright/dashboard-perf/dashboard-demo-alternating-4-runs)
+- balanced alternating comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-4-comparison.json`
+- balanced alternating run directory: `output/playwright/dashboard-perf/dashboard-demo-alternating-4-runs`
 
 ### Browser metrics under balanced route ordering
 
@@ -267,6 +268,43 @@ The alternating runner also makes route-order sensitivity explicit:
 
 That means the Inertia control is more sensitive to whether it goes first or second in the cycle, while the RSC route is comparatively stable.
 But the aggregate result is still the one that matters, and the aggregate result keeps the user-visible win while preserving a modest server-side tradeoff.
+
+## Clean-driver Repeat
+
+Date captured: `2026-04-14`
+
+What changed in this pass:
+
+- re-ran the alternating comparison with a matching `Chrome 147` and `ChromeDriver 147`
+- extended the run to `8` cycles so each route ran first four times and second four times
+- recovered the final comparison summary from the completed per-run JSON files after the long run exited before writing the aggregate file
+
+Artifacts:
+
+- clean-driver comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-8-clean-driver-comparison.json`
+- clean-driver run directory: `output/playwright/dashboard-perf/dashboard-demo-alternating-8-clean-driver-runs`
+
+### Median browser metrics under the matched driver repeat
+
+| Metric              | Inertia demo |   RSC demo |    Delta |
+| ------------------- | -----------: | ---------: | -------: |
+| Navigation duration |   `544.80ms` | `396.65ms` | `-27.2%` |
+| Response end        |   `385.55ms` | `375.75ms` |  `-2.5%` |
+| LCP                 |   `568.00ms` | `426.00ms` | `-25.0%` |
+
+### What went wrong with the mean
+
+- one RSC run reported a `19.3s` duration on cached `dashboard_rsc_demo_styles.css`
+- that resource showed `0` transfer bytes and a normal `responseEnd` of `356.20ms`, so the spike was a dev-asset timing anomaly rather than a slow server response
+- the same outlier inflated the RSC mean `navigation duration` to `2822.07ms` and mean `LCP` to `2847.50ms`, which makes the mean unsuitable as the headline statistic for this repeat
+
+What still matters from this repeat:
+
+- the matched-driver rerun removed the earlier browser-driver mismatch caveat
+- route-scoped server averages were roughly neutral-to-favorable for the RSC route on this pass
+- median user-visible metrics still favored the RSC route
+
+That means the clean-driver repeat increased confidence in the benchmark discipline, but it also showed that development-mode asset timing is still noisy enough that a production-like rerun is the next real step.
 
 ## Interpretation Of The Alternating Follow-up
 
@@ -315,6 +353,6 @@ Keep the branches and claims narrow:
 2. Treat React 19 type cleanup as a separate stacked branch if needed.
 3. Keep the matched `/dashboard/inertia_demo` and `/dashboard/rsc_demo` pair as the primary performance comparison surface.
 4. Keep using the alternating comparison runner instead of grouped batches for future local claims.
-5. Re-run the same comparison after fixing the local Chrome and chromedriver mismatch so the numbers are less noisy.
-6. Repeat the instrumented comparison in a production-like renderer mode before broadening the pitch.
+5. Run headline local comparisons with `--require-driver-match` so mismatched Chrome and chromedriver pairs fail fast instead of silently adding noise.
+6. Repeat the instrumented comparison in a production-like renderer and asset mode before broadening the pitch.
 7. Do not file upstream issues or pitch upstream adoption on runtime-performance grounds until the matched comparison stays favorable after that cleanup.
