@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 module DashboardComparisonProps
+  extend ActiveSupport::Concern
+  include DashboardComparisonTiming
+
   private
     def dashboard_comparison_props
       with_dashboard_comparison_timing("compare_props") do
