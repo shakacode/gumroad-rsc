@@ -20,8 +20,8 @@ The current best candidate is the reduced dashboard comparison:
 
 I put together a public experiment repo that tracks Gumroad and compares a matched Inertia control against a bounded React on Rails Pro + React 19 + RSC implementation on one reduced dashboard surface:
 
-- Repo: https://github.com/shakacode/gumroad-rsc
-- Comparison docs: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/performance-findings.md
+- Repo: https://github.com/shakacode/react-on-rails-demo-gumroad-rsc
+- Comparison docs: https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/performance-findings.md
 
 The goal is not to argue for a broad rewrite.
 The goal is to determine whether there are specific read-heavy surfaces where a server-component-oriented approach can produce enough user-visible benefit to justify the extra complexity.
@@ -70,9 +70,9 @@ It is a narrow, measurable tradeoff with an early user-visible upside.
 
 ## Links
 
-- Current status: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/current-status.md
-- Performance findings: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/performance-findings.md
-- Positioning notes: https://github.com/shakacode/gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/positioning-notes.md
+- Current status: https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/current-status.md
+- Performance findings: https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/performance-findings.md
+- Positioning notes: https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/blob/jg-codex/benchmark-discipline/docs/positioning-notes.md
 ```
 
 ## If converted into an upstream PR

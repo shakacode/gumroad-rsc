@@ -10,15 +10,15 @@ This repository has moved past pure planning, through the Rspack migration branc
 
 ## Shareable references
 
-- repo: [shakacode/gumroad-rsc](https://github.com/shakacode/gumroad-rsc)
-- stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/gumroad-rsc/pull/1)
-- stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2)
-- stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/gumroad-rsc/pull/3)
+- repo: [shakacode/react-on-rails-demo-gumroad-rsc](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc)
+- stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/1)
+- stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/2)
+- stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/3)
 - React on Rails issue: [react_on_rails#3144](https://github.com/shakacode/react_on_rails/issues/3144)
 
 ## What is already done
 
-- Created the public experiment repo under `shakacode/gumroad-rsc`
+- Created the public experiment repo under `shakacode/react-on-rails-demo-gumroad-rsc`
 - Seeded it from current `antiwork/gumroad`
 - Preserved `upstream` so the experiment stays grounded in the real app
 - Documented the comparison plan in [rsc-comparison-plan.md](./rsc-comparison-plan.md)

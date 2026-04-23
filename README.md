@@ -33,7 +33,7 @@ The goal is not to argue that every Inertia page should be replaced. The goal is
 - [docs/performance-team-handoff.md](docs/performance-team-handoff.md)
 - [docs/performance-findings.md](docs/performance-findings.md)
 - [React on Rails issue #3144](https://github.com/shakacode/react_on_rails/issues/3144)
-- [PR stack: baseline](https://github.com/shakacode/gumroad-rsc/pull/1), [React 19 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2), [React on Rails Pro + RSC](https://github.com/shakacode/gumroad-rsc/pull/3)
+- [PR stack: baseline](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/1), [React 19 + Rspack](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/2), [React on Rails Pro + RSC](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/3)
 
 ### What this repo currently proves
 

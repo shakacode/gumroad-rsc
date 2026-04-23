@@ -14,10 +14,10 @@ The goal is to measure whether a bounded RSC surface can produce a meaningful us
 
 ## Shareable references
 
-- repo: [shakacode/gumroad-rsc](https://github.com/shakacode/gumroad-rsc)
-- stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/gumroad-rsc/pull/1)
-- stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2)
-- stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/gumroad-rsc/pull/3)
+- repo: [shakacode/react-on-rails-demo-gumroad-rsc](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc)
+- stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/1)
+- stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/2)
+- stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/3)
 - React on Rails issue: [react_on_rails#3144](https://github.com/shakacode/react_on_rails/issues/3144)
 
 ## Current conclusion
