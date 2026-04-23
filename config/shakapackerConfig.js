@@ -3,10 +3,10 @@ import yaml from "js-yaml";
 import { fileURLToPath } from "node:url";
 
 const DEV_SERVER_ENV_PREFIX = "SHAKAPACKER_DEV_SERVER";
-const TRUE_VALUES = new Set(["true", "false"]);
+const BOOLEAN_VALUES = new Set(["true", "false"]);
 
 const parseEnvValue = (value) => {
-  if (TRUE_VALUES.has(value)) return value === "true";
+  if (BOOLEAN_VALUES.has(value)) return value === "true";
   if (/^-?\d+$/u.test(value)) return Number(value);
   return value;
 };
