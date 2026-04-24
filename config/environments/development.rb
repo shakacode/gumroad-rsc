@@ -37,6 +37,28 @@ Rails.application.configure do
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   config.asset_host = "#{PROTOCOL}://#{ASSET_DOMAIN}"
+  config.hosts = [
+    *VALID_REQUEST_HOSTS,
+    *VALID_API_REQUEST_HOSTS,
+    DOMAIN,
+    "#{DOMAIN}:3000",
+    ASSET_DOMAIN,
+    "#{ASSET_DOMAIN}:3000",
+    ROOT_DOMAIN,
+    "#{ROOT_DOMAIN}:3000",
+    SHORT_DOMAIN,
+    "#{SHORT_DOMAIN}:3000",
+    DISCOVER_DOMAIN,
+    "#{DISCOVER_DOMAIN}:3000",
+    API_DOMAIN,
+    "#{API_DOMAIN}:3000",
+    "localhost",
+    "localhost:3000",
+    "127.0.0.1",
+    "127.0.0.1:3000",
+    "0.0.0.0",
+    "0.0.0.0:3000",
+  ].compact.uniq
 
   # Where to store uploaded files (see config/storage.yml for options)
   config.active_storage.service = :development

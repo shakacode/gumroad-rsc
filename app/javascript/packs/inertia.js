@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 
 import AppWrapper from "../inertia/app_wrapper.tsx";
 import Layout, { PublicLayout, LoggedInUserLayout } from "../inertia/layout.tsx";
+import { resolvePageComponent } from "../inertia/resolve_page_component.ts";
 
 router.on("start", (event) => {
   if (event.detail.visit.prefetch) return;
@@ -75,23 +76,9 @@ function assignLayout(page) {
   return page;
 }
 
-async function resolvePageComponent(name) {
-  try {
-    const module = await import(`../pages/${name}.tsx`);
-    return assignLayout(module.default);
-  } catch {
-    try {
-      const module = await import(`../pages/${name}.jsx`);
-      return assignLayout(module.default);
-    } catch {
-      throw new Error(`Page component not found: ${name}`);
-    }
-  }
-}
-
 createInertiaApp({
   progress: false,
-  resolve: resolvePageComponent,
+  resolve: (name) => resolvePageComponent(name, { onLoad: assignLayout }),
   title: (title) => title || "Gumroad",
   setup({ el, App, props }) {
     if (!el) return;

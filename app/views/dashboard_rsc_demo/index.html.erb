@@ -1,0 +1,12 @@
+<% content_for :script do %>
+  <% rsc_demo_asset_path = Rails.env.test? ? "/packs-test/dashboard_rsc_demo.js" : "/packs/dashboard_rsc_demo.js" %>
+  <%= javascript_include_tag rsc_demo_asset_path, defer: true, crossorigin: "anonymous" %>
+<% end %>
+<%= stream_react_component(
+  "DashboardRscDemoPage",
+  props: @dashboard_rsc_demo_props,
+  auto_load_bundle: false,
+  replay_console: false,
+  trace: false,
+  id: "dashboard-rsc-demo-root"
+) %>

@@ -25,7 +25,7 @@ jobs:
     name: Demo Validation
     runs-on: ubuntu-latest
     needs: ci_gate
-    if: ${{ github.repository == 'shakacode/gumroad-rsc' }}
+    if: ${{ github.repository == 'shakacode/react-on-rails-demo-gumroad-rsc' }}
     env:
       DISABLE_SPRING: "1"
     steps:
@@ -55,18 +55,32 @@ jobs:
       - name: Detect demo validation targets
         id: demo_targets
         run: |
-          spec_files=()
+          controller_spec_files=()
           for file in spec/controllers/dashboard_controller_spec.rb spec/controllers/dashboard_rsc_demo_controller_spec.rb; do
             if [ -f "$file" ]; then
-              spec_files+=("$file")
+              controller_spec_files+=("$file")
             fi
           done
 
-          if [ ${#spec_files[@]} -eq 0 ]; then
+          if [ ${#controller_spec_files[@]} -eq 0 ]; then
             echo "has_controller_specs=false" >> "$GITHUB_OUTPUT"
           else
             echo "has_controller_specs=true" >> "$GITHUB_OUTPUT"
-            printf 'controller_specs=%s\n' "${spec_files[*]}" >> "$GITHUB_OUTPUT"
+            printf 'controller_specs=%s\n' "${controller_spec_files[*]}" >> "$GITHUB_OUTPUT"
+          fi
+
+          system_spec_files=()
+          for file in spec/requests/dashboard_demo_smoke_spec.rb; do
+            if [ -f "$file" ]; then
+              system_spec_files+=("$file")
+            fi
+          done
+
+          if [ ${#system_spec_files[@]} -eq 0 ]; then
+            echo "has_system_specs=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_system_specs=true" >> "$GITHUB_OUTPUT"
+            printf 'system_specs=%s\n' "${system_spec_files[*]}" >> "$GITHUB_OUTPUT"
           fi
 
           if node -e 'const pkg = require("./package.json"); process.exit(pkg.scripts?.["build:rsc-demo"] ? 0 : 1)'; then
@@ -143,7 +157,7 @@ jobs:
           bundle exec rails runner 'load Rails.root.join("db/seeds/010_stripe_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/020_braintree_merchant_account_seeds.rb"); load Rails.root.join("db/seeds/030_paypal_merchant_account_seeds.rb")'
 
       - name: Build test Shakapacker manifest
-        if: ${{ steps.demo_targets.outputs.has_controller_specs == 'true' && steps.demo_targets.outputs.needs_test_manifest_build == 'true' }}
+        if: ${{ (steps.demo_targets.outputs.has_controller_specs == 'true' || steps.demo_targets.outputs.has_system_specs == 'true') && steps.demo_targets.outputs.needs_test_manifest_build == 'true' }}
         env:
           RAILS_ENV: test
           NODE_ENV: test
@@ -161,15 +175,54 @@ jobs:
           RAILS_ENV: test
         run: npm run build:rsc-demo
 
+      - name: Start React on Rails node renderer
+        if: ${{ steps.demo_targets.outputs.has_system_specs == 'true' }}
+        env:
+          RAILS_ENV: test
+          RENDERER_LOG_LEVEL: warn
+        run: |
+          mkdir -p tmp
+          node client/node-renderer.cjs > tmp/node-renderer.log 2>&1 &
+          echo $! > tmp/node-renderer.pid
+
+          for attempt in $(seq 1 60); do
+            if ruby -rsocket -e 'TCPSocket.new("127.0.0.1", 3800).close'; then
+              exit 0
+            fi
+
+            if ! kill -0 "$(cat tmp/node-renderer.pid)" 2>/dev/null; then
+              echo "React on Rails node renderer exited early" >&2
+              cat tmp/node-renderer.log >&2 || true
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          echo "Timed out waiting for React on Rails node renderer" >&2
+          cat tmp/node-renderer.log >&2 || true
+          exit 1
+
+      - name: Run demo browser smoke specs
+        if: ${{ steps.demo_targets.outputs.has_system_specs == 'true' }}
+        env:
+          IN_DOCKER: "true"
+          RAILS_ENV: test
+        run: bundle exec rspec ${{ steps.demo_targets.outputs.system_specs }}
+
       - name: Clean up
         if: always()
-        run: docker compose -f docker/docker-compose-local.yml down -v
+        run: |
+          if [ -f tmp/node-renderer.pid ]; then
+            kill "$(cat tmp/node-renderer.pid)" 2>/dev/null || true
+          fi
+          docker compose -f docker/docker-compose-local.yml down -v
 
   build:
     name: Build images
     runs-on: ubicloud-standard-4
     needs: ci_gate
-    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
+    if: ${{ github.repository != 'shakacode/react-on-rails-demo-gumroad-rsc' }}
     env:
       DOCKER_BUILDKIT: 1
     steps:
@@ -278,7 +331,7 @@ jobs:
       COMPOSE_PROJECT_NAME: web_${{ github.run_id }}_${{ github.run_attempt }}_fast_${{ matrix.ci_node_index }}
     runs-on: ubicloud-standard-4
     needs: build
-    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
+    if: ${{ github.repository != 'shakacode/react-on-rails-demo-gumroad-rsc' }}
     strategy:
       fail-fast: false
       matrix:
@@ -385,7 +438,7 @@ jobs:
       WEB_REPO: quay.io/gumroad/web
     runs-on: ubicloud-standard-4
     needs: build
-    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
+    if: ${{ github.repository != 'shakacode/react-on-rails-demo-gumroad-rsc' }}
     strategy:
       fail-fast: false
       matrix:
@@ -594,7 +647,7 @@ jobs:
     name: Unblock deployment from Buildkite
     runs-on: ubicloud-standard-2
     needs: [test_fast, test_slow]
-    if: ${{ github.repository != 'shakacode/gumroad-rsc' && success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ github.repository != 'shakacode/react-on-rails-demo-gumroad-rsc' && success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - name: Unblock corresponding Buildkite build
         uses: nick-fields/retry@v3

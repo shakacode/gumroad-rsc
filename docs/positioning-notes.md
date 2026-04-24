@@ -108,6 +108,67 @@ This repo should also help answer whether Shakapacker plus Rspack can be positio
 - a credible alternative for teams that want more control than Vite defaults
 - a bundling story that works for both Inertia and React on Rails users
 
+But the message has to stay disciplined:
+
+- `Rspack` is a build-speed and iteration-speed story
+- `RSC` is the story that might justify added runtime complexity on the page
+- mixing those two claims weakens both
+
+### 4. Commercial bridge for existing Inertia Rails apps
+
+This may be a real product path.
+
+The strongest version is not:
+
+- "replace Inertia with React on Rails"
+
+The stronger version is:
+
+- "keep Inertia, but upgrade the rendering and React-runtime story for Rails apps that have already committed to Inertia"
+
+Possible shape:
+
+- a commercial Rails gem plus JS package
+- designed for apps already using `inertia_rails` and React
+- optional Node-renderer-backed SSR for Inertia pages
+- React 19 compatibility guidance and defaults
+- CSP, process boot, observability, and failure-fallback support around SSR
+
+What makes this attractive:
+
+- it meets teams where they already are
+- it lowers the adoption barrier compared with a full architecture switch
+- it creates a friendlier entry product than full React on Rails Pro
+- it may create an upsell path into broader ShakaCode tooling later
+
+What the first version should probably not try to do:
+
+- full RSC semantics inside the Inertia protocol
+- a broad rewrite of Inertia internals
+- official-sounding branding that implies endorsement from the Inertia team
+
+The key technical caution is that Inertia's page-props protocol maps naturally to SSR, but much less naturally to RSC-style server/client boundaries.
+
+So the safer product ladder is likely:
+
+- first: SSR and React 19 support for Inertia Rails
+- second: streaming-oriented improvements if they fit the protocol cleanly
+- third: only explore deeper RSC-style integration if the value is clear and the abstraction stays honest
+
+Possible positioning:
+
+- "ShakaCode SSR for Inertia Rails"
+- "React 19 support for Inertia Rails"
+- "advanced rendering for Inertia Rails"
+
+Possible licensing posture:
+
+- commercial but friendlier than full React on Rails Pro
+- priced and named as an add-on for existing Inertia apps
+- source-available or private commercial distribution if it depends on proprietary renderer code
+
+This only makes sense if the product stays clearly complementary to Inertia and clearly separate from any proprietary implementation details that should remain inside ShakaCode products.
+
 ## IP and Product Guardrails
 
 ### Public vs proprietary
@@ -159,4 +220,12 @@ For now, the best path is:
 - build the comparison honestly
 - document where Inertia wins
 - document where React on Rails Pro wins
+- treat the current Inertia plus Rspack branch as enabling infrastructure, not the runtime pitch
+- use the matched `/dashboard/inertia_demo` versus `/dashboard/rsc_demo` pair as the primary comparison surface
+- treat the current balanced alternating result as promising but mixed:
+- the matched RSC route wins on `LCP` and total navigation duration
+- the matched RSC route also cuts page-specific JS requests from `6` to `1`
+- the matched Inertia route still wins on server `responseEnd` and controller `action_total`
+- note that the response-end pass cut the raw RSC response to near-parity on transfer size, but the server-side penalty still remained under the balanced method
+- require the next React on Rails Pro plus RSC pass to keep the user-visible win while narrowing the renderer or streaming overhead
 - only then decide whether the next move is docs, a public integration, a private product feature, or an upstream proposal

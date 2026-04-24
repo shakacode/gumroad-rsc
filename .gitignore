@@ -63,3 +63,7 @@ docs/ssh.md
 test-branch-creation.log
 .vercel
 .claude/worktrees/
+output/
+ssr-generated/
+.node-renderer-bundles/
+.playwright-cli/

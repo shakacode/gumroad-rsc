@@ -14,11 +14,104 @@
   <a href="https://gumroad.com">Gumroad</a> is an e-commerce platform that enables creators to sell products directly to consumers. This repository contains the source code for the Gumroad web application.
 </p>
 
-## Experiment Repo
+> [!IMPORTANT]
+> This is not Gumroad's canonical repository. It is a public ShakaCode experiment seeded from [`antiwork/gumroad`](https://github.com/antiwork/gumroad) to answer three questions:
+>
+> 1. Can this codebase move cleanly from Webpack to `Shakapacker + Rspack`?
+> 2. What real React 19 adoption fallout appears on a non-trivial Rails app?
+> 3. Can a bounded `React on Rails Pro + RSC` slice beat a matched `Inertia` control enough to justify the extra complexity?
+
+## Public Experiment Repo
 
 This repository tracks [antiwork/gumroad](https://github.com/antiwork/gumroad) and is being used by ShakaCode as a focused experiment for comparing the current Inertia-based implementation against a React on Rails Pro + React 19 + RSC implementation on carefully chosen surfaces.
 
 The goal is not to argue that every Inertia page should be replaced. The goal is to determine whether a narrower set of pages can benefit enough from React 19, React on Rails Pro, and React Server Components to justify a deeper proposal later.
+
+### Start here
+
+- [docs/current-status.md](docs/current-status.md)
+- [docs/performance-team-handoff.md](docs/performance-team-handoff.md)
+- [docs/performance-findings.md](docs/performance-findings.md)
+- [React on Rails issue #3128](https://github.com/shakacode/react_on_rails/issues/3128)
+- [Benchmark and positioning issue #3144](https://github.com/shakacode/react_on_rails/issues/3144)
+- [Consolidated demo PR #11](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/11)
+- [Follow-up PR #10](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/10) for Shakapacker dev-server environment overrides
+
+### What this repo currently proves
+
+- `Shakapacker 10 + Rspack` is viable on this codebase and materially faster for local builds.
+- The demo assets are route-scoped, so ordinary Inertia pages do not pay for the experiment's extra JS or CSS.
+- A bounded `React on Rails Pro + RSC` dashboard slice can beat a matched `Inertia` control on navigation duration and `LCP` under a stricter alternating benchmark that balances route order.
+- The current tradeoff is still real: under that balanced run, the `RSC` route is modestly slower on `responseEnd` and route-level controller timing.
+- Route-scoped `Server-Timing` and an alternating comparison runner now make that tradeoff measurable instead of anecdotal.
+- GitHub-hosted demo validation now includes a real browser smoke pass for both comparison routes, not just build and controller-spec checks.
+
+Latest balanced alternating local result on the reduced dashboard surface:
+
+- Inertia navigation duration: `568.47ms`
+- RSC navigation duration: `501.53ms`
+- Inertia `LCP`: `602.00ms`
+- RSC `LCP`: `525.00ms`
+- Inertia `responseEnd`: `423.23ms`
+- RSC `responseEnd`: `441.65ms`
+- Inertia `action_total`: `250.50ms`
+- RSC `action_total`: `278.32ms`
+
+This alternating run is the stricter method because it rotates route order by cycle instead of relying on separate batches.
+It keeps the user-visible win while preserving a measurable server-side tradeoff.
+It is still the safer headline than the later 8-cycle clean-driver repeat, because that repeat surfaced one dev-asset outlier on the RSC route even though its medians stayed favorable.
+
+This is enough for a stronger positioning story.
+It is still not enough for an upstream migration pitch or a production-performance claim.
+
+### Demo surface
+
+The repo currently exposes two comparison routes that use the same reduced seller-data surface:
+
+- `https://gumroad.dev/dashboard/inertia_demo`
+- `https://gumroad.dev/dashboard/rsc_demo`
+
+Login credentials for local verification:
+
+- email: `seller@gumroad.com`
+- password: `password`
+- two-factor code: `000000`
+
+### Verified screenshots
+
+These screenshots were captured from a signed-in local session on this branch.
+
+| Inertia control                               | React on Rails Pro + RSC              |
+| --------------------------------------------- | ------------------------------------- |
+| ![Inertia demo](docs/images/inertia-demo.png) | ![RSC demo](docs/images/rsc-demo.png) |
+
+### How to reproduce the comparison locally
+
+1. Start local services: `LOCAL_DETACHED=true make local`
+2. Prepare the database: `bin/rails db:prepare`
+3. Start the app runtime in separate terminals:
+   `bundle exec rails s -b 0.0.0.0 -p 3000`
+   `npm run setup && ./bin/shakapacker-dev-server`
+   `node client/node-renderer.cjs`
+4. Open the two demo routes and compare:
+   `/dashboard/inertia_demo`
+   `/dashboard/rsc_demo`
+5. For the stricter benchmark method, run:
+   `ruby scripts/perf/compare_dashboard_routes.rb --base-url https://gumroad.dev --measure-base-url https://gumroad.dev --path /dashboard/inertia_demo --path /dashboard/rsc_demo --label dashboard-demo-alternating-4 --cycles 4 --server-warmup-requests 1 --require-driver-match`
+
+If a long comparison run is interrupted after it writes per-run JSON files, rerun the same command with `--reuse-existing` to emit the final comparison summary without discarding completed samples.
+
+If you want the measured benchmark artifacts instead of a visual spot check, start with [docs/performance-findings.md](docs/performance-findings.md).
+
+### Shareable docs
+
+- [docs/current-status.md](docs/current-status.md)
+- [docs/performance-findings.md](docs/performance-findings.md)
+- [docs/performance-team-handoff.md](docs/performance-team-handoff.md)
+- [docs/rsc-comparison-plan.md](docs/rsc-comparison-plan.md)
+- [docs/positioning-notes.md](docs/positioning-notes.md)
+- [docs/gumroad-upstream-issue-draft.md](docs/gumroad-upstream-issue-draft.md)
+- [docs/youtube-demo-script.md](docs/youtube-demo-script.md)
 
 See [docs/rsc-comparison-plan.md](docs/rsc-comparison-plan.md) for the working plan, scope, and success criteria.
 See [docs/positioning-notes.md](docs/positioning-notes.md) for the product, messaging, and adjacent-idea notes this experiment should help answer.

@@ -18,17 +18,17 @@ describe DashboardController, type: :controller, inertia: true do
 
   include_context "with user signed in as admin for seller"
 
+  def expect_dashboard_data_in_inertia_response(expected_data = {})
+    expect(inertia.props[:creator_home]).to be_present, "Expected creator_home in Inertia.js response"
+
+    expected_data.each do |key, value|
+      expect(inertia.props[:creator_home][key]).to eq(value), "Expected #{key} to be #{value}, but got #{inertia.props[:creator_home][key]}"
+    end
+  end
+
   describe "GET index" do
     it_behaves_like "authorize called for action", :get, :index do
       let(:record) { :dashboard }
-    end
-
-    def expect_dashboard_data_in_inertia_response(expected_data = {})
-      expect(inertia.props[:creator_home]).to be_present, "Expected creator_home in Inertia.js response"
-
-      expected_data.each do |key, value|
-        expect(inertia.props[:creator_home][key]).to eq(value), "Expected #{key} to be #{value}, but got #{inertia.props[:creator_home][key]}"
-      end
     end
 
     context "when seller has no activity" do
@@ -197,6 +197,49 @@ describe DashboardController, type: :controller, inertia: true do
         get :index
 
         expect(response).to redirect_to products_path
+      end
+    end
+  end
+
+  describe "GET inertia_demo" do
+    it_behaves_like "authorize called for action", :get, :inertia_demo do
+      let(:record) { :dashboard }
+      let(:policy_method) { :index? }
+    end
+
+    context "when seller has no activity" do
+      it "renders the comparison page" do
+        get :inertia_demo
+
+        expect(response).to be_successful
+        expect(response.body).to include("data-page")
+        expect(inertia).to render_component("Dashboard/InertiaDemo")
+        expect(inertia.props[:seller_display_name]).to eq(seller.name)
+        expect(inertia.props[:creator_home][:balances]).to be_present
+        expect(response.headers["Server-Timing"]).to include("action_total")
+        expect(response.headers["Server-Timing"]).to include("compare_props")
+        expect(response.headers["Server-Timing"]).to include("compare_creator_home")
+        expect(response.headers["Server-Timing"]).to include("render_dispatch")
+      end
+    end
+
+    context "when seller is suspended for TOS" do
+      let(:admin_user) { create(:user) }
+      let!(:product) { create(:product, user: seller) }
+
+      before do
+        create(:user_compliance_info, user: seller)
+        seller.flag_for_tos_violation(author_id: admin_user.id, product_id: product.id)
+        seller.suspend_for_tos_violation(author_id: admin_user.id)
+        request.env["warden"].session["last_sign_in_at"] = DateTime.current.to_i
+      end
+
+      it "redirects to the products_path and still records action timing" do
+        get :inertia_demo
+
+        expect(response).to redirect_to products_path
+        expect(response.headers["Server-Timing"]).to include("action_total")
+        expect(response.headers["Server-Timing"]).not_to include("render_dispatch")
       end
     end
   end

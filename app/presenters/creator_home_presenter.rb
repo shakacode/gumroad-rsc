@@ -15,13 +15,46 @@ class CreatorHomePresenter
 
   def creator_home_props
     has_sale = seller.sales.not_is_bundle_product_purchase.successful_or_preorder_authorization_successful.exists?
-
     first_product = seller.links.visible.exists?
     getting_started_dismissed = seller.has_dismissed_getting_started_checklist?
+    tax_forms = tax_forms_data
 
-    getting_started_stats = if getting_started_dismissed
-      { "first_product" => first_product }
-    else
+    {
+      name: seller.alive_user_compliance_info&.first_name || "",
+      has_sale:,
+      getting_started_stats: getting_started_stats(
+        has_sale:,
+        first_product:,
+        getting_started_dismissed:
+      ),
+      getting_started_dismissed:,
+      balances: formatted_balances,
+      sales: top_sales,
+      activity_items:,
+      stripe_verification_message: stripe_verification_message,
+      tax_forms: tax_forms.fetch(:tax_forms),
+      show_1099_download_notice: tax_forms.fetch(:show_1099_download_notice),
+      tax_center_enabled: tax_forms.fetch(:tax_center_enabled)
+    }
+  end
+
+  def creator_home_rsc_demo_props
+    tax_forms = tax_forms_data
+
+    {
+      balances: formatted_balances,
+      sales: demo_sales.presence,
+      activity_items: demo_activity_items.presence,
+      stripe_verification_message: stripe_verification_message,
+      show_1099_download_notice: tax_forms.fetch(:show_1099_download_notice).presence,
+      tax_center_enabled: tax_forms.fetch(:tax_center_enabled).presence
+    }.compact
+  end
+
+  private
+    def getting_started_stats(has_sale:, first_product:, getting_started_dismissed:)
+      return { "first_product" => first_product } if getting_started_dismissed
+
       {
         "customized_profile" => seller.name.present?,
         "first_follower" => seller.followers.exists?,
@@ -33,83 +66,108 @@ class CreatorHomePresenter
       }
     end
 
-    today = Time.now.in_time_zone(seller.timezone).to_date
-    analytics = CreatorAnalytics::CachingProxy.new(seller).data_for_dates(today - 30, today)
-    top_sales_data = analytics[:by_date][:sales]
-      .sort_by { |_, sales| -sales&.sum }.take(BALANCE_ITEMS_LIMIT)
-
-    # Preload products with thumbnail attachments to avoid N+1 queries
-    product_permalinks = top_sales_data.map(&:first)
-    products_by_permalink = seller.products
-      .where(unique_permalink: product_permalinks)
-      .includes(thumbnail_alive: { file_attachment: { blob: { variant_records: { image_attachment: :blob } } } })
-      .select(&:alive?)
-      .index_by(&:unique_permalink)
-
-    sales = top_sales_data.map do |p|
-      product = products_by_permalink[p[0]]
-      next unless product
+    def formatted_balances
+      balances = UserBalanceStatsService.new(user: seller).fetch[:overview]
 
       {
-        "id" => product.unique_permalink,
-        "name" => product.name,
-        "thumbnail" => product.thumbnail_alive&.url,
-        "sales" => product.successful_sales_count,
-        "revenue" => product.total_usd_cents,
-        "visits" => product.number_of_views,
-        "today" => analytics[:by_date][:totals][product.unique_permalink]&.last || 0,
-        "last_7" => analytics[:by_date][:totals][product.unique_permalink]&.last(7)&.sum || 0,
-        "last_30" => analytics[:by_date][:totals][product.unique_permalink]&.sum || 0,
-      }
-    end.compact
-    balances = UserBalanceStatsService.new(user: seller).fetch[:overview]
-
-    stripe_verification_message = nil
-    if seller.stripe_account.present?
-      seller.user_compliance_info_requests.requested.each do |request|
-        if request.verification_error_message.present?
-          stripe_verification_message = request.verification_error_message
-        end
-      end
-    end
-
-    tax_center_enabled = seller.tax_center_enabled?
-    if tax_center_enabled
-      tax_forms = []
-      show_1099_download_notice = seller.user_tax_forms.for_year(Time.current.prev_year.year).exists?
-    else
-      tax_forms = (Time.current.year.downto(seller.created_at.year)).each_with_object({}) do |year, hash|
-        url = seller.eligible_for_1099?(year) ? seller.tax_form_1099_download_url(year: year) : nil
-        hash[year] = url if url.present?
-      end
-      show_1099_download_notice = tax_forms[Time.current.prev_year.year].present?
-    end
-
-
-    {
-      name: seller.alive_user_compliance_info&.first_name || "",
-      has_sale:,
-      getting_started_stats:,
-      getting_started_dismissed:,
-      balances: {
         balance: formatted_dollar_amount(balances.fetch(:balance), with_currency: seller.should_be_shown_currencies_always?),
         last_seven_days_sales_total: formatted_dollar_amount(balances.fetch(:last_seven_days_sales_total), with_currency: seller.should_be_shown_currencies_always?),
         last_28_days_sales_total: formatted_dollar_amount(balances.fetch(:last_28_days_sales_total), with_currency: seller.should_be_shown_currencies_always?),
         total: formatted_dollar_amount(balances.fetch(:sales_cents_total), with_currency: seller.should_be_shown_currencies_always?),
-      },
-      sales:,
-      activity_items:,
-      stripe_verification_message:,
-      tax_forms:,
-      show_1099_download_notice:,
-      tax_center_enabled:
-    }
-  end
+      }
+    end
 
-  private
+    def top_sales
+      analytics = creator_home_analytics
+      top_sales_data = analytics[:by_date][:sales]
+        .sort_by { |_, sales| -sales&.sum }.take(BALANCE_ITEMS_LIMIT)
+
+      # Preload products with thumbnail attachments to avoid N+1 queries
+      product_permalinks = top_sales_data.map(&:first)
+      products_by_permalink = seller.products
+        .where(unique_permalink: product_permalinks)
+        .includes(thumbnail_alive: { file_attachment: { blob: { variant_records: { image_attachment: :blob } } } })
+        .select(&:alive?)
+        .index_by(&:unique_permalink)
+
+      top_sales_data.map do |product_permalink, _sales|
+        product = products_by_permalink[product_permalink]
+        next unless product
+
+        {
+          "id" => product.unique_permalink,
+          "name" => product.name,
+          "thumbnail" => product.thumbnail_alive&.url,
+          "sales" => product.successful_sales_count,
+          "revenue" => product.total_usd_cents,
+          "visits" => product.number_of_views,
+          "today" => analytics[:by_date][:totals][product.unique_permalink]&.last || 0,
+          "last_7" => analytics[:by_date][:totals][product.unique_permalink]&.last(7)&.sum || 0,
+          "last_30" => analytics[:by_date][:totals][product.unique_permalink]&.sum || 0,
+        }
+      end.compact
+    end
+
+    def demo_sales
+      top_sales.filter do |product|
+        product.values_at("sales", "revenue", "visits", "today", "last_7", "last_30").any?(&:nonzero?)
+      end.map { |product| product.except("thumbnail") }
+    end
+
+    def creator_home_analytics
+      today = Time.now.in_time_zone(seller.timezone).to_date
+      CreatorAnalytics::CachingProxy.new(seller).data_for_dates(today - 30, today)
+    end
+
+    def stripe_verification_message
+      return unless seller.stripe_account.present?
+
+      seller.user_compliance_info_requests.requested.filter_map { |request| request.verification_error_message.presence }.last
+    end
+
+    def tax_forms_data
+      previous_year = Time.current.prev_year.year
+      tax_center_enabled = seller.tax_center_enabled?
+
+      if tax_center_enabled
+        {
+          tax_center_enabled:,
+          tax_forms: [],
+          show_1099_download_notice: seller.user_tax_forms.for_year(previous_year).exists?
+        }
+      else
+        tax_forms = (Time.current.year.downto(seller.created_at.year)).each_with_object({}) do |year, hash|
+          url = seller.eligible_for_1099?(year) ? seller.tax_form_1099_download_url(year: year) : nil
+          hash[year] = url if url.present?
+        end
+
+        {
+          tax_center_enabled:,
+          tax_forms:,
+          show_1099_download_notice: tax_forms[previous_year].present?
+        }
+      end
+    end
+
     def activity_items
       items = followers_activity_items + sales_activity_items
       items.sort_by { |item| item["timestamp"] }.last(ACTIVITY_ITEMS_LIMIT).reverse
+    end
+
+    def demo_activity_items
+      activity_items.map do |item|
+        details = item.fetch("details")
+
+        {
+          "type" => item.fetch("type"),
+          "timestamp" => item.fetch("timestamp"),
+          "details" => if item["type"] == "new_sale"
+            details.slice("price_cents", "product_name", "product_unique_permalink")
+          else
+            details.slice("email", "name")
+          end
+        }
+      end
     end
 
     # Returns an array for sales to be processed by the frontend.
