@@ -3,7 +3,6 @@
 class DashboardRscDemoController < Sellers::BaseController
   include ReactOnRailsPro::Stream
   include DashboardComparisonProps
-  include DashboardComparisonTiming
 
   before_action :check_payment_details, only: :index
   helper_method :content_security_policy_nonce
