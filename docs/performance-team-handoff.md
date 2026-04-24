@@ -28,7 +28,7 @@ What is already true:
 
 - the RSC route wins on total navigation duration
 - the RSC route wins on `LCP`
-- the balanced alternating local benchmark still has the RSC route ahead on total navigation duration and `LCP`
+- the corrected clean-port alternating local benchmark still has the RSC route ahead on total navigation duration and `LCP`
 - the RSC route reduces page-specific JS requests from `6` to `1` in the latest balanced pass
 - the demo JS and CSS are route-scoped, so unrelated pages are not paying for the experiment
 - the raw RSC HTML transfer is now close to the Inertia control after the response-end pass
@@ -36,9 +36,9 @@ What is already true:
 What is not yet proven:
 
 - the strongest result is still a local-development measurement
-- the earlier headline run used a mismatched local Chrome and chromedriver pair, and the later matched-driver repeat exposed a development-asset outlier on one RSC run
+- one earlier headline run used a mismatched local Chrome and chromedriver pair, and the later matched-driver repeat exposed a development-asset outlier on one RSC run
 - measurement order affects cache state enough that grouped batches can overstate the gap
-- the balanced alternating run still shows a modest server-side tradeoff for the RSC route
+- the corrected alternating run still shows a modest server-side tradeoff for the RSC route
 
 ## Latest balanced alternating local result
 
@@ -48,46 +48,57 @@ Measured with:
 - local Docker-backed services
 - local logged-in seller
 - standalone React on Rails Pro Node renderer running on a dedicated port for this pass
+- Rails and `bin/shakapacker-dev-server` both restarted with `SHAKAPACKER_DEV_SERVER_PORT=3036` after discovering another repo had reclaimed the default `3035` port
+- manual browser verification of both demo routes after the clean-port restart
+- matching `Chrome 147` and `ChromeDriver 147`
 
 ### Browser metrics
 
 This is the stricter comparison to use from this pass:
 
 - `scripts/perf/compare_dashboard_routes.rb`
-- `4` cycles with route order rotated each cycle: `AB`, `BA`, `AB`, `BA`
+- `8` cycles with route order rotated each cycle: `AB`, `BA`, `AB`, `BA`, `AB`, `BA`, `AB`, `BA`
 - one explicit warmup request per measured run
 
-| Metric                 |   Inertia demo |       RSC demo |    Delta |
-| ---------------------- | -------------: | -------------: | -------: |
-| Navigation duration    |     `568.47ms` |     `501.53ms` | `-11.8%` |
-| Response end           |     `423.23ms` |     `441.65ms` |  `+4.4%` |
-| LCP                    |     `602.00ms` |     `525.00ms` | `-12.8%` |
-| HTML response transfer | `14,240.5` bytes | `15,265.0` bytes |  `+7.2%` |
-| JS request count       |            `6` |            `1` | `-83.3%` |
+| Metric                 |      Inertia demo |         RSC demo |    Delta |
+| ---------------------- | ----------------: | ---------------: | -------: |
+| Navigation duration    |        `457.16ms` |       `402.29ms` | `-12.0%` |
+| Response end           |        `320.70ms` |       `335.96ms` |  `+4.8%` |
+| LCP                    |        `501.00ms` |       `421.00ms` | `-16.0%` |
+| HTML response transfer | `14,332.38` bytes | `15,265.0` bytes |  `+6.5%` |
+| JS request count       |               `6` |              `1` | `-83.3%` |
 
 ### Route-scoped server timings
 
-| Metric                  | Inertia demo |   RSC demo |    Delta |
-| ----------------------- | -----------: | ---------: | -------: |
-| Controller `action_total` |   `250.50ms` | `278.32ms` | `+11.1%` |
-| Presenter `compare_props` |   `226.41ms` | `236.16ms` |  `+4.3%` |
-| Presenter `compare_creator_home` | `209.89ms` | `220.35ms` |  `+5.0%` |
-| `sql.active_record`     |   `120.42ms` | `120.99ms` |  `+0.5%` |
-| `render_dispatch`       |    `20.57ms` |  `23.61ms` | `+14.8%` |
+| Metric                           | Inertia demo |   RSC demo |    Delta |
+| -------------------------------- | -----------: | ---------: | -------: |
+| Controller `action_total`        |   `163.10ms` | `169.74ms` |  `+4.1%` |
+| Presenter `compare_props`        |   `144.80ms` | `145.49ms` |  `+0.5%` |
+| Presenter `compare_creator_home` |   `134.52ms` | `136.14ms` |  `+1.2%` |
+| `sql.active_record`              |    `76.67ms` |  `77.10ms` |  `+0.6%` |
+| `render_dispatch`                |    `15.76ms` |  `18.63ms` | `+18.2%` |
 
 ### Position sensitivity
 
 The alternating run also captures how much each route changes based on whether it runs first or second in the cycle:
 
-- Inertia when first: navigation `545.10ms`, response end `395.00ms`
-- Inertia when second: navigation `591.85ms`, response end `451.45ms`
-- RSC when first: navigation `502.90ms`, response end `443.25ms`
-- RSC when second: navigation `500.15ms`, response end `440.05ms`
+- Inertia when first: navigation `486.62ms`
+- Inertia when second: navigation `427.70ms`
+- RSC when first: navigation `420.25ms`
+- RSC when second: navigation `384.33ms`
 
 That makes two things clearer:
 
 - route order mattered enough to invalidate grouped-batch claims as the headline benchmark method
-- the Inertia control is more sensitive to that order than the RSC route, but the balanced aggregate still leaves `responseEnd` and route-level server timing modestly in Inertia's favor
+- the route split is still sensitive to execution order, but the balanced aggregate now leaves only a modest server-side gap in Inertia's favor while keeping a strong user-visible RSC win
+
+### Corrected local setup note
+
+This headline run is stronger than the earlier local headline because it fixed a real environment problem first.
+
+- another local repo had reclaimed port `3035` with a plain-HTTP webpack dev server
+- Rails was proxying `https://app.gumroad.dev/packs/...` requests to that wrong process, which broke browser verification
+- after adding JS-side `SHAKAPACKER_DEV_SERVER_*` override support, restarting both Rails and the dev server on `3036`, and manually rechecking both pages, the balanced comparison still favored the RSC route on user-visible metrics
 
 ### Raw response reduction achieved earlier in the pass
 
@@ -114,6 +125,7 @@ The reason it is not the headline benchmark:
 - one RSC run reported a cached `dashboard_rsc_demo_styles.css` duration of about `19.3s` with `0` transfer bytes
 - that left `responseEnd` normal but poisoned mean `navigation` and `LCP`
 - the dev-asset outlier makes the repeat useful as a diagnostic and discipline check, not as the clean headline result
+- it predates the corrected clean-port local rerun above, so it is better treated as an outlier-detection artifact than as the current summary benchmark
 
 ## How optimized is the current RSC implementation?
 
@@ -201,6 +213,8 @@ The heavier internal Gumroad matrix still exists for the original codebase shape
 - Inertia metrics JSON: `output/playwright/dashboard-perf/inertia-demo-control-warm-trimmed-3-dashboard-inertia-demo-metrics.json`
 - RSC metrics JSON: `output/playwright/dashboard-perf/rsc-demo-warm-trimmed-3-dashboard-rsc-demo-metrics.json`
 - balanced alternating comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-4-comparison.json`
+- corrected clean-port alternating comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-4-clean-driver-port-3036-matched-driver-comparison.json`
+- corrected clean-port `8`-cycle comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-8-clean-driver-port-3036-matched-driver-comparison.json`
 - instrumented Inertia rerun JSON: `output/playwright/dashboard-perf/inertia-demo-server-timing-3-post-rsc-dashboard-inertia-demo-metrics.json`
 - instrumented RSC JSON: `output/playwright/dashboard-perf/rsc-demo-server-timing-3-dashboard-rsc-demo-metrics.json`
 - clean-driver repeat comparison JSON: `output/playwright/dashboard-perf/dashboard-demo-alternating-8-clean-driver-comparison.json`
