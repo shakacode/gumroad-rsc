@@ -32,8 +32,10 @@ The goal is not to argue that every Inertia page should be replaced. The goal is
 - [docs/current-status.md](docs/current-status.md)
 - [docs/performance-team-handoff.md](docs/performance-team-handoff.md)
 - [docs/performance-findings.md](docs/performance-findings.md)
-- [React on Rails issue #3144](https://github.com/shakacode/react_on_rails/issues/3144)
-- [PR stack: baseline](https://github.com/shakacode/gumroad-rsc/pull/1), [React 19 + Rspack](https://github.com/shakacode/gumroad-rsc/pull/2), [React on Rails Pro + RSC](https://github.com/shakacode/gumroad-rsc/pull/3)
+- [React on Rails issue #3128](https://github.com/shakacode/react_on_rails/issues/3128)
+- [Benchmark and positioning issue #3144](https://github.com/shakacode/react_on_rails/issues/3144)
+- [Consolidated demo PR #11](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/11)
+- [Follow-up PR #10](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/10) for Shakapacker dev-server environment overrides
 
 ### What this repo currently proves
 
