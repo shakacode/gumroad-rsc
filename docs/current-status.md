@@ -11,10 +11,12 @@ This repository has moved past pure planning, through the Rspack migration branc
 ## Shareable references
 
 - repo: [shakacode/react-on-rails-demo-gumroad-rsc](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc)
-- stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/1)
-- stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/2)
-- stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/3)
-- React on Rails issue: [react_on_rails#3144](https://github.com/shakacode/react_on_rails/issues/3144)
+- consolidated demo PR: [react-on-rails-demo-gumroad-rsc#11](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/11)
+- follow-up PR: [react-on-rails-demo-gumroad-rsc#10](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/10)
+- React on Rails hub issue: [react_on_rails#3128](https://github.com/shakacode/react_on_rails/issues/3128)
+- benchmark and positioning issue: [react_on_rails#3144](https://github.com/shakacode/react_on_rails/issues/3144)
+
+The earlier review stack ([#1](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/1), [#2](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/2), [#3](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/3), [#6](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/6), [#7](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/7), [#8](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/8), [#9](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/9)) was closed unmerged after the work was consolidated into [#11](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/11).
 
 ## What is already done
 
@@ -218,7 +220,7 @@ Recommended order:
 - `jg-codex/react19-type-cleanup` if the type fallout is too noisy for the bundler branch
 - `jg-codex/react-on-rails-pro-demo`
 - `jg-codex/demo-server-timing`
-- `jg-codex/benchmark-discipline`
+- `jg-codex/benchmark-headline-metrics`
 
 ## Adjacent ideas to keep documented but out of scope for the first demo
 

@@ -15,10 +15,10 @@ The goal is to measure whether a bounded RSC surface can produce a meaningful us
 ## Shareable references
 
 - repo: [shakacode/react-on-rails-demo-gumroad-rsc](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc)
-- stacked PR 1: [baseline dashboard docs](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/1)
-- stacked PR 2: [React 19 + Shakapacker 10 + Rspack](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/2)
-- stacked PR 3: [React on Rails Pro + RSC demo](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/3)
-- React on Rails issue: [react_on_rails#3144](https://github.com/shakacode/react_on_rails/issues/3144)
+- consolidated demo PR: [react-on-rails-demo-gumroad-rsc#11](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/11)
+- follow-up PR: [react-on-rails-demo-gumroad-rsc#10](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/10)
+- React on Rails hub issue: [react_on_rails#3128](https://github.com/shakacode/react_on_rails/issues/3128)
+- benchmark and positioning issue: [react_on_rails#3144](https://github.com/shakacode/react_on_rails/issues/3144)
 
 ## Current conclusion
 
@@ -221,7 +221,9 @@ The heavier internal Gumroad matrix still exists for the original codebase shape
 
 ## Current sharing status
 
-The repo is public, the stacked PRs are open, and the React on Rails issue is available as the team-facing discussion hub.
+The repo is public, the consolidated demo PR is open, and the React on Rails issues are available as team-facing discussion hubs.
+
+The earlier stacked PRs were closed unmerged after consolidation into [#11](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/11). Treat [#11](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/11) as the parent review branch and [#10](https://github.com/shakacode/react-on-rails-demo-gumroad-rsc/pull/10) as its current child follow-up.
 
 The artifact paths listed above are local benchmark outputs, so they are shareable through a repo checkout and branch work, but not through GitHub artifact hosting.
 The measurement script also now records browser/version provenance and percentile-style summary stats in those JSON outputs so the performance-team handoff is less dependent on ad hoc environment notes.
