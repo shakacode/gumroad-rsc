@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   autofix:
-    if: ${{ github.repository != 'shakacode/gumroad-rsc' }}
+    if: ${{ github.repository != 'shakacode/react-on-rails-demo-gumroad-rsc' }}
     runs-on: ubuntu-latest
     env:
       RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
