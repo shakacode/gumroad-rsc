@@ -15,7 +15,7 @@ permissions:
 jobs:
   gumroad_rsc:
     name: Gumroad RSC
-    uses: shakacode/react_on_rails/.github/workflows/demo-fleet-smoke.yml@613c6c2a251a782328b26d68e7f23daa9b677497
+    uses: shakacode/react_on_rails/.github/workflows/demo-fleet-smoke.yml@e560acddc87d03e239a1fe4c813a238ea5024f8c
     with:
       ruby-version: "3.4.3"
       node-version: "20"

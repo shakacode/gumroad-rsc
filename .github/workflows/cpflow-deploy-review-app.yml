@@ -88,7 +88,7 @@ jobs:
       - validate-review-app-source
       - prepare-control-plane-db-secrets
     if: needs.validate-review-app-source.outputs.deployable == 'true'
-    uses: shakacode/control-plane-flow/.github/workflows/cpflow-deploy-review-app.yml@v5.2.0
+    uses: shakacode/control-plane-flow/.github/workflows/cpflow-deploy-review-app.yml@v5.3.0
     secrets:
       CPLN_TOKEN_STAGING: ${{ secrets.CPLN_TOKEN_STAGING }}
       DOCKER_BUILD_SSH_KEY: ${{ secrets.DOCKER_BUILD_SSH_KEY }}
